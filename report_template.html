@@ -1,0 +1,1269 @@
+<!doctype html>
+<!-- PC TidyUp - Copyright (c) 2026 Mehrdad Ghazvinizadeh.
+     Licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE.md). Commercial use requires written permission. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PC TidyUp Storage Report</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2330; --muted: #5d6677; --line: #e3e6ec; --soft: #eef1f5;
+  --accent: #2563eb; --accent-ink: #ffffff;
+  --safe: #16a34a; --likely: #d97706; --review: #7c3aed; --info: #64748b;
+  --compress: #0891b2; --offload: #2563eb; --archive: #b45309; --dup: #db2777; --free: #94a3b8; --bar: #2563eb;
+  /* status (priority + health): icon + label always accompany the color */
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b; --neutral: #94a3b8;
+  --p1: var(--critical); --p2: var(--serious); --p3: var(--warning); --p4: var(--neutral);
+  --status-ink: #1d2330; --danger: #c62828;
+  --warn-bg: #fff7ed; --warn-ink: #9a3412; --crit-bg: #fdecec; --crit-ink: #8e1c1c; --good-bg: #e9f7ea; --good-ink: #165c16;
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11141a; --panel: #191d25; --ink: #e6e9ef; --muted: #9aa3b2; --line: #2a303b; --soft: #222833;
+    --accent: #60a5fa; --accent-ink: #0b1220;
+    --safe: #4ade80; --likely: #fbbf24; --review: #a78bfa; --info: #94a3b8;
+    --compress: #22d3ee; --offload: #60a5fa; --archive: #f59e0b; --dup: #f472b6; --free: #475569; --bar: #60a5fa;
+    --neutral: #64748b; --danger: #f87171;
+    --warn-bg: #2a1d10; --warn-ink: #fdba74; --crit-bg: #2c1414; --crit-ink: #fca5a5; --good-bg: #10241a; --good-ink: #86efac;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11141a; --panel: #191d25; --ink: #e6e9ef; --muted: #9aa3b2; --line: #2a303b; --soft: #222833;
+  --accent: #60a5fa; --accent-ink: #0b1220;
+  --safe: #4ade80; --likely: #fbbf24; --review: #a78bfa; --info: #94a3b8;
+  --compress: #22d3ee; --offload: #60a5fa; --archive: #f59e0b; --dup: #f472b6; --free: #475569; --bar: #60a5fa;
+  --neutral: #64748b; --danger: #f87171;
+  --warn-bg: #2a1d10; --warn-ink: #fdba74; --crit-bg: #2c1414; --crit-ink: #fca5a5; --good-bg: #10241a; --good-ink: #86efac;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; padding-bottom: 80px; }
+header { padding: 20px 32px 8px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+header h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+header h1 span { color: var(--accent); }
+.hdr-r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sub { color: var(--muted); font-size: 13px; }
+nav { position: sticky; top: 0; z-index: 6; background: var(--bg); border-bottom: 1px solid var(--line); padding: 0 32px; display: flex; gap: 4px; overflow-x: auto; }
+nav button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 10px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+nav button.on { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+main { padding: 20px 32px 48px; max-width: 1440px; }
+section { display: none; } section.on { display: block; }
+h2 { font-size: 17px; margin: 28px 0 10px; } h2:first-child { margin-top: 0; }
+h3 { font-size: 14px; margin: 0 0 4px; }
+a { color: var(--accent); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.tile[data-go] { cursor: pointer; } .tile[data-go]:hover { border-color: var(--accent); }
+.tile .k { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.tile .v { font-size: 24px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tile .d { font-size: 12px; color: var(--muted); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.diskbar { height: 22px; border-radius: 6px; overflow: hidden; display: flex; gap: 2px; background: var(--soft); margin: 10px 0 6px; }
+.diskbar div { height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; background: var(--panel); }
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.cb, th.cb { width: 28px; cursor: default; }
+tr:hover td { background: var(--soft); }
+tr.done td { opacity: .55; }
+.path { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.copy { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 5px; font-size: 11px; padding: 0 6px; cursor: pointer; margin-left: 6px; }
+.copy:hover { color: var(--ink); }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 99px; white-space: nowrap; color: #fff; }
+.b-safe { background: var(--safe); } .b-likely { background: var(--likely); } .b-review { background: var(--review); } .b-info { background: var(--info); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge { color: #111; } }
+:root[data-theme="dark"] .badge { color: #111; }
+.prio { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 1px 8px 1px 6px; border-radius: 99px; white-space: nowrap; color: var(--status-ink); }
+.prio.p1 { background: var(--p1); color: #fff; } .prio.p2 { background: var(--p2); } .prio.p3 { background: var(--p3); } .prio.p4 { background: var(--soft); color: var(--muted); border: 1px solid var(--line); }
+.how { color: var(--muted); font-size: 12px; }
+.minibar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; margin-top: 4px; min-width: 60px; }
+.minibar div { height: 100%; background: var(--bar); border-radius: 0 3px 3px 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.toolbar input[type=search] { flex: 1; min-width: 200px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; }
+.chip { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 99px; padding: 4px 12px; font: inherit; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip.on { border-color: var(--accent); background: var(--soft); font-weight: 600; }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 7px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger { background: var(--danger); color: #fff; border-color: var(--danger); font-weight: 600; }
+.btn.sm { padding: 2px 9px; font-size: 12px; }
+.note { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: flex; gap: 10px; align-items: flex-start; }
+.note.warn { background: var(--warn-bg); color: var(--warn-ink); } .note.crit { background: var(--crit-bg); color: var(--crit-ink); } .note.good { background: var(--good-bg); color: var(--good-ink); }
+.note .ico { font-size: 18px; line-height: 1.1; }
+.muted { color: var(--muted); }
+details.item summary { cursor: pointer; }
+.tree .row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 110px 90px 100px 120px; gap: 8px; padding: 4px 6px; border-bottom: 1px solid var(--line); align-items: center; }
+.tree .row:hover { background: var(--soft); }
+.tree .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); font-size: 12px; cursor: pointer; }
+.tree .tog { display: inline-block; width: 16px; color: var(--muted); }
+.tree .hdr { font-size: 12px; color: var(--muted); font-weight: 600; }
+.bars .r { display: grid; grid-template-columns: 170px minmax(0,1fr) 90px; gap: 10px; align-items: center; padding: 3px 0; font-size: 13px; }
+.bars .t { height: 12px; background: var(--soft); border-radius: 3px; overflow: hidden; } .bars .t div { height: 100%; background: var(--bar); border-radius: 0 3px 3px 0; }
+.two { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+.pos { color: var(--dup); } .neg { color: var(--safe); }
+code { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+pre code { display: block; padding: 10px; white-space: pre-wrap; }
+/* priority guide */
+.health { display: flex; gap: 14px; align-items: center; padding: 14px 18px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--line); background: var(--panel); }
+.health .ico { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; font-weight: 800; color: #fff; flex: none; }
+.health.good .ico { background: var(--good); } .health.warning .ico { background: var(--warning); color: var(--status-ink); } .health.critical .ico { background: var(--critical); }
+.health .t { font-size: 16px; font-weight: 650; }
+.lanes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.lane { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; border-top: 4px solid var(--p4); display: flex; flex-direction: column; }
+.lane.p1 { border-top-color: var(--p1); } .lane.p2 { border-top-color: var(--p2); } .lane.p3 { border-top-color: var(--p3); }
+.lane-h { padding: 12px 14px 8px; }
+.lane-h .sum { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.lane-b { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 10px; align-items: center; }
+.card .l { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .s { font-variant-numeric: tabular-nums; font-weight: 650; text-align: right; }
+.card .p { grid-column: 1 / -1; font-family: var(--mono); font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .a { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.flag { font-size: 11px; color: var(--crit-ink); background: var(--crit-bg); border-radius: 4px; padding: 0 6px; }
+.stack { display: flex; gap: 2px; height: 26px; border-radius: 6px; overflow: hidden; background: var(--soft); }
+.stack div { height: 100%; }
+/* app chrome */
+.conn { font-size: 12px; display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+.conn .dot { background: var(--good); } .conn.off .dot { background: var(--critical); }
+#bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(0,0,0,.08); padding: 10px 32px; display: none; gap: 10px; align-items: center; flex-wrap: wrap; }
+#bar.on { display: flex; }
+#bar .info { font-weight: 600; margin-right: auto; }
+#job { position: sticky; top: 41px; z-index: 5; display: none; margin: 0 32px; background: var(--panel); border: 1px solid var(--accent); border-radius: 0 0 10px 10px; padding: 12px 16px; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+#job.on { display: block; }
+.jhead { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.jhead .t { font-weight: 650; margin-right: auto; }
+.prog { height: 10px; background: var(--soft); border-radius: 5px; overflow: hidden; margin: 8px 0 6px; }
+.prog div { height: 100%; background: var(--accent); width: 0; transition: width .4s; border-radius: 0 5px 5px 0; }
+.prog.ind div { width: 30% !important; animation: ind 1.2s infinite linear; }
+@keyframes ind { from { margin-left: -30%; } to { margin-left: 100%; } }
+/* fixed-height lines so the panel never changes size while progress updates (no page jumping) */
+#job .t, #job .ln, #job .cur { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal; min-height: 1.5em; }
+#job .jhead .t { display: inline; flex: 1; min-width: 0; }
+.jlog { height: 140px; overflow: auto; font-family: var(--mono); font-size: 11px; background: var(--soft); border-radius: 6px; padding: 6px 8px; margin-top: 6px; }
+.jlog .error { color: var(--danger); } .jlog .warn { color: var(--warn-ink); }
+.ok-chip { font-size: 11px; color: var(--good-ink); background: var(--good-bg); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.err-chip { font-size: 11px; color: var(--crit-ink); background: var(--crit-bg); border-radius: 4px; padding: 1px 6px; display: inline-block; max-width: 260px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); padding: 0; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+.dlg-h { padding: 16px 20px 0; } .dlg-b { padding: 8px 20px; max-height: 60vh; overflow: auto; } .dlg-f { padding: 12px 20px 16px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--line); }
+.dlg-list { font-size: 12px; border: 1px solid var(--line); border-radius: 8px; max-height: 220px; overflow: auto; margin: 8px 0; }
+.dlg-list div { display: flex; justify-content: space-between; gap: 10px; padding: 4px 10px; border-bottom: 1px solid var(--line); }
+.opt { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0; } .opt input { margin-top: 4px; }
+.opt .how { display: block; }
+.foot { padding: 14px 32px 24px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); max-width: 1440px; }
+@media (max-width: 700px) { .foot { padding-left: 16px; padding-right: 16px; } }
+/* settings */
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px 24px; }
+.fld { display: flex; flex-direction: column; gap: 3px; }
+.fld .lbl { font-weight: 600; font-size: 13px; }
+.fld .row { display: flex; gap: 8px; align-items: center; }
+.fld input[type=number] { width: 130px; }
+.fld .unit { color: var(--muted); font-size: 12px; }
+.fld.wide { grid-column: 1 / -1; }
+.fld.bad .field { border-color: var(--danger); }
+textarea.field { min-height: 86px; font-family: var(--mono); font-size: 12px; resize: vertical; }
+.savebar { position: sticky; top: 41px; z-index: 4; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.savebar .msg { margin-right: auto; font-size: 13px; }
+.dirty { color: var(--warn-ink); font-weight: 600; }
+.subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+pre.explain { background: var(--soft); border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 8px 0 0; }
+.off-row td { opacity: .55; }
+.field { width: 100%; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; }
+@media (max-width: 700px) {
+  header, nav, main { padding-left: 16px; padding-right: 16px; } #job { margin: 0 16px; } #bar { padding: 10px 16px; }
+  .tree .row { grid-template-columns: 24px minmax(0,1fr) 90px; } .tree .row > :nth-child(4), .tree .row > :nth-child(5), .tree .row > :nth-child(6) { display: none; }
+  .bars .r { grid-template-columns: 110px minmax(0,1fr) 80px; }
+  .two { grid-template-columns: 1fr; }
+  table { display: block; overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1><span>PC TidyUp</span> storage report</h1>
+    <div class="sub" id="sub"></div>
+  </div>
+  <div class="hdr-r" id="hdr"></div>
+</header>
+<nav id="nav"></nav>
+<div id="job"></div>
+<main id="main"></main>
+<footer class="foot">PC TidyUp © 2026 Mehrdad Ghazvinizadeh · Free for personal and other noncommercial use under the
+  <a href="https://polyformproject.org/licenses/noncommercial/1.0.0" target="_blank" rel="noopener">PolyForm Noncommercial License 1.0.0</a>
+  · Any commercial use, in whole or in part, requires the author's written permission.
+  · <strong>Use entirely at your own risk</strong>: provided "as is", without warranty; to the maximum extent permitted by law the author and publisher accept no liability for any damage or data loss -
+  <a href="../DISCLAIMER.md" id="disclaimer-link" target="_blank" rel="noopener">Disclaimer</a>.</footer>
+<div id="bar"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+const DATA = /*__TIDYUP_DATA__*/null;
+const APP = /*__TIDYUP_APP__*/null;
+</script>
+<script>
+(function () {
+  let D = DATA;                      // replaced in place when a new scan finishes (no page reload)
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const hb = n => { n = +n || 0; const neg = n < 0; n = Math.abs(n); const u = ["B","KB","MB","GB","TB"]; let i = 0; while (n >= 1024 && i < 4) { n /= 1024; i++; } return (neg ? "−" : "") + (i ? n.toFixed(n >= 100 ? 0 : 1) + " " + u[i] : n + " B"); };
+  const num = n => (+n || 0).toLocaleString();
+  const ACT = { safe: "Low risk", likely: "Likely obsolete", review: "Your decision", info: "Windows / app-managed" };
+  const ACT_DESC = {
+    safe: "Caches and temp files that apps rebuild automatically. Low risk, not zero: close the app first - caches of running apps are skipped.",
+    likely: "Old logs, dumps, installers, stale build output. Glance at the list, then delete.",
+    review: "Could matter to you: backups, models, archives, caches holding unsynced data.",
+    info: "Managed by Windows or an app. Use the tool named in 'How' - never delete by hand."
+  };
+  const PRIO_DEFAULT = { 1: ["Do now", "Big win, low risk - act right away"], 2: ["Quick check", "Glance at it, then act"], 3: ["Decide", "Needs your judgement before acting"], 4: ["Optional", "Small gain - whenever convenient"] };
+  let PRIO = (D && D.priority_labels) || PRIO_DEFAULT;
+  const PICON = { 1: "!!", 2: "!", 3: "?", 4: "·" };
+  const prioBadge = p => `<span class="prio p${p}" title="${esc(PRIO[p][1])}">${PICON[p]} P${p} ${esc(PRIO[p][0])}</span>`;
+  const OPS = {
+    delete:   { label: "Delete", past: "deleted", cls: "danger" },
+    compress: { label: "Compress", past: "compressed", cls: "" },
+    archive:  { label: "Archive to OneDrive", past: "archived", cls: "" },
+    offload:  { label: "Make online-only", past: "online-only", cls: "" },
+    restore:  { label: "Restore", past: "restored", cls: "" }
+  };
+  const copyBtn = p => `<button class="copy" data-copy="${esc(p)}" title="Copy path">copy</button>`;
+  // live app only: open the folder (or the containing folder with the file selected) in File Explorer
+  const revealBtn = p => APP && p ? `<button class="copy" data-reveal="${esc(p)}" title="Show in File Explorer">open</button>` : "";
+  const pathCell = p => `<span class="path">${esc(p)}</span>${copyBtn(p)}${revealBtn(p)}`;
+  const odRoot = () => ((APP && APP.onedrive) || (D && D.meta.onedrive) || "").toLowerCase();
+  const inOD = p => { const r = odRoot(); return !!r && (p.toLowerCase() + "\\").startsWith(r + "\\"); };
+
+  // ------------------------------------------------------------------ theme + global clicks
+  const root = document.documentElement;
+  try { const t = localStorage.getItem("tidyup-theme"); if (t) root.dataset.theme = t; } catch (e) {}
+  function toggleTheme() {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("tidyup-theme", root.dataset.theme); } catch (e) {}
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-copy]");
+    if (b) { navigator.clipboard?.writeText(b.dataset.copy); b.textContent = "copied"; setTimeout(() => b.textContent = "copy", 1200); return; }
+    const rv = e.target.closest("[data-reveal]");
+    if (rv) {
+      e.preventDefault(); e.stopPropagation();
+      api("/api/reveal", { path: rv.dataset.reveal })
+        .then(r => { rv.textContent = "opened"; rv.title = r.note || "Opened in File Explorer"; setTimeout(() => { rv.textContent = "open"; }, 1500); })
+        .catch(err => { rv.textContent = "n/a"; rv.title = err.message; setTimeout(() => { rv.textContent = "open"; }, 2500); });
+      return;
+    }
+    const g = e.target.closest("[data-go]");
+    if (g) { e.preventDefault(); show(g.dataset.go, g.dataset.filter); }
+    const r = e.target.closest("[data-run]");
+    if (r) { e.preventDefault(); openConfirm(r.dataset.run, r.dataset.keys.split("\n")); }
+  });
+
+  // ------------------------------------------------------------------ items, selection, status
+  const ITEMS = new Map(), SEL = new Set();
+  let STATE = (APP && APP.state) || {};
+  // live-app state - declared up here, before anything runs, so nothing can reset it later
+  let JOB = null, logFrom = 0, pollTimer = null, failures = 0, hiddenJob = null, startedHere = null;
+  let pageStamp = (D && D.meta && D.meta.stamp) || null;      // which report this page shows
+  function reg(key, label, path, bytes, ops) {
+    let it = ITEMS.get(key);
+    if (!it) { it = { key, label, path, bytes: bytes || 0, ops: new Set() }; ITEMS.set(key, it); }
+    ops.forEach(o => it.ops.add(o));
+    return key;
+  }
+  const isDone = k => STATE[k] && STATE[k].ok;
+  function chip(s) {
+    if (!s) return "";
+    if (s.ok && s.recycled) return `<span class="ok-chip" title="${esc(s.msg || "")}">♻ in Recycle Bin · ${hb(s.recycled)}</span>`;
+    if (s.ok) return `<span class="ok-chip" title="${esc(s.msg || "")}">✓ ${esc(OPS[s.op]?.past || s.op)}${s.freed ? " · " + hb(s.freed) : ""}</span>`;
+    return `<span class="err-chip" title="${esc(s.msg || "")}">✗ ${esc((s.msg || "failed").slice(0, 90))}</span>`;
+  }
+  const selBox = k => APP && ITEMS.get(k)?.ops.size ? `<input type="checkbox" class="sel" data-key="${esc(k)}" ${SEL.has(k) ? "checked" : ""} ${isDone(k) ? "disabled" : ""} aria-label="select">` : "";
+  const stSpan = k => `<span class="st" data-st="${esc(k)}">${chip(STATE[k])}</span>`;
+  // Only touch the DOM for items whose result actually changed - polling must not repaint the page.
+  const SEEN = {};
+  function refreshChips(keys) {
+    const changed = (keys || Object.keys(STATE)).filter(k => { const sig = JSON.stringify(STATE[k] || null); if (SEEN[k] === sig) return false; SEEN[k] = sig; return true; });
+    if (!changed.length) return;
+    for (const k of changed) {
+      const ck = CSS.escape(k);
+      $$(`[data-st="${ck}"]`).forEach(el => { el.innerHTML = chip(STATE[k]); });
+      if (isDone(k)) $$(`input.sel[data-key="${ck}"]`).forEach(cb => { cb.disabled = true; cb.checked = false; SEL.delete(k); cb.closest("tr,.row")?.classList.add("done"); });
+    }
+    updateBar();
+  }
+  Object.keys(STATE).forEach(k => { SEEN[k] = JSON.stringify(STATE[k]); });   // already rendered by the initial page
+  const setText = (el, t) => { if (el && el.textContent !== t) el.textContent = t; };
+  document.addEventListener("change", e => {
+    const cb = e.target;
+    if (cb.classList.contains("sel")) { cb.checked ? SEL.add(cb.dataset.key) : SEL.delete(cb.dataset.key); $$(`input.sel[data-key="${CSS.escape(cb.dataset.key)}"]`).forEach(x => x.checked = cb.checked); updateBar(); }
+    if (cb.classList.contains("selall")) {
+      $$("input.sel", cb.closest("table")).forEach(x => { if (!x.disabled) { x.checked = cb.checked; cb.checked ? SEL.add(x.dataset.key) : SEL.delete(x.dataset.key); } });
+      updateBar();
+    }
+  });
+  let barSig = "";
+  function updateBar() {
+    const bar = $("#bar");
+    if (!APP || !SEL.size) { bar.classList.remove("on"); barSig = ""; return; }
+    const items = [...SEL].map(k => ITEMS.get(k)).filter(Boolean);
+    const bytes = items.reduce((a, i) => a + (i.bytes || 0), 0);
+    const counts = {};
+    for (const op of ["delete", "compress", "archive", "offload", "restore"]) counts[op] = items.filter(i => i.ops.has(op)).length;
+    const busy = JOB && JOB.state === "running";
+    const sig = JSON.stringify([SEL.size, bytes, counts, busy]);
+    if (sig === barSig) return;                       // nothing changed: leave the bar alone
+    barSig = sig;
+    bar.innerHTML = `<span class="info">${SEL.size} selected · ${hb(bytes)}</span>` +
+      ["offload", "archive", "compress", "delete", "restore"].filter(op => counts[op]).map(op =>
+        `<button class="btn ${OPS[op].cls}" data-op="${op}" ${busy ? "disabled" : ""}>${OPS[op].label}${counts[op] < SEL.size ? ` (${counts[op]})` : ""}…</button>`).join("") +
+      `<button class="btn" data-clear>Clear</button>`;
+    bar.classList.add("on");
+    bar.querySelectorAll("[data-op]").forEach(b => b.onclick = () => openConfirm(b.dataset.op, [...SEL].filter(k => ITEMS.get(k)?.ops.has(b.dataset.op))));
+    bar.querySelector("[data-clear]").onclick = () => { SEL.clear(); $$("input.sel,input.selall").forEach(x => x.checked = false); updateBar(); };
+  }
+
+  // ------------------------------------------------------------------ header + tabs
+  let m = null, s = null;           // meta + scan stats of the report on screen (set by renderAll)
+  $("#hdr").innerHTML = (APP ? `<span class="conn" id="conn"><i class="dot"></i><span>Connected${APP.elevated ? " · administrator" : ""}</span></span>
+      ${APP.elevated ? "" : `<button class="btn" id="elev" title="Needed for C:\\Windows\\Temp, Windows Update cache and other system items">Restart as admin</button>`}
+      <button class="btn primary" id="scanbtn">Run new scan</button>
+      <button class="btn" id="stopbtn" title="Stop the local PC TidyUp app">Stop PC TidyUp</button>`
+    : `<span class="conn off"><i class="dot"></i>Saved report (read-only)</span>`) + `<button class="btn" id="theme">Theme</button>`;
+  $("#theme").onclick = toggleTheme;
+
+  const tabs = [["settings", "⚙ Settings"], ["overview", "Overview"], ["cleanup", "Clean up"], ["compress", "Compress"], ["offload", "OneDrive"],
+    ["archive", "Archive"], ["dups", "Duplicates"], ["space", "Where is the space"], ["large", "Largest files"],
+    ["changes", "Since last run"], ["about", "How it works"]];
+  $("#nav").innerHTML = tabs.map(([id, t]) => `<button data-tab="${id}">${t}</button>`).join("");
+  $("#main").innerHTML = tabs.map(([id]) => `<section id="s-${id}"></section>`).join("");
+  $("#nav").onclick = e => { const b = e.target.closest("button"); if (b) show(b.dataset.tab); };
+  let setFilter = () => {};
+  function show(id, filter, keepScroll) {
+    $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === id));
+    $$("main section").forEach(x => x.classList.toggle("on", x.id === "s-" + id));
+    if (id === "cleanup" && filter) setFilter(filter);
+    if (id === "archive" && APP) loadManifest();
+    if (id === "settings") loadSettings();
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    if (!keepScroll) window.scrollTo(0, 0);
+  }
+
+  // ------------------------------------------------------------------ sortable table helper (with optional selection)
+  function table(el, cols, rows, opts = {}) {
+    const keyOf = opts.key;
+    if (APP && keyOf) {
+      cols = [{ t: `<input type="checkbox" class="selall" aria-label="select all shown">`, cb: true, val: () => 0, html: r => selBox(keyOf(r)) }, ...cols,
+              { t: "Status", val: r => (STATE[keyOf(r)] ? 1 : 0), html: r => stSpan(keyOf(r)) }];
+    }
+    let key = opts.sort !== undefined ? opts.sort + (APP && keyOf ? 1 : 0) : cols.findIndex(c => c.num), dir = -1, limit = opts.limit ?? 200;
+    function render() {
+      const sorted = rows.slice().sort((a, b) => { const c = cols[key], x = c.val(a), y = c.val(b); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+      const shown = sorted.slice(0, limit);
+      el.innerHTML = `<table><thead><tr>${cols.map((c, i) => `<th class="${c.num ? "num" : ""}${c.cb ? " cb" : ""}" data-i="${i}">${c.t}${!c.cb && i === key ? (dir < 0 ? " ▾" : " ▴") : ""}</th>`).join("")}</tr></thead>
+        <tbody>${shown.map(r => `<tr class="${keyOf && isDone(keyOf(r)) ? "done" : ""}">${cols.map(c => `<td class="${c.num ? "num" : ""}${c.cb ? " cb" : ""}">${c.html ? c.html(r) : esc(c.val(r))}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${cols.length}" class="muted">Nothing found.</td></tr>`}</tbody></table>
+        ${sorted.length > limit ? `<p><button class="chip" data-more>Show all ${sorted.length} rows</button></p>` : ""}`;
+      el.querySelectorAll("th").forEach(th => { if (th.classList.contains("cb")) return; th.onclick = () => { const i = +th.dataset.i; if (i === key) dir = -dir; else { key = i; dir = cols[i].num ? -1 : 1; } render(); }; });
+      const more = el.querySelector("[data-more]"); if (more) more.onclick = () => { limit = Infinity; render(); };
+    }
+    render();
+  }
+  const sizeCol = (t, f, max) => ({ t, num: true, val: f, html: r => `${hb(f(r))}${max ? `<div class="minibar"><div style="width:${Math.max(1, 100 * f(r) / max)}%"></div></div>` : ""}` });
+  function tile(color, k, v, d, go, filter) {
+    return `<div class="tile" ${go ? `data-go="${go}"` : ""} ${filter ? `data-filter="${filter}"` : ""}><div class="k"><i class="dot" style="background:var(--${color})"></i>${k}</div><div class="v">${hb(v)}</div><div class="d">${d}</div></div>`;
+  }
+  function bars(el, rows) {
+    const max = Math.max(1, ...rows.map(r => r[1]));
+    el.innerHTML = rows.map(([k, v, t]) => `<div class="r" title="${esc(k)}: ${hb(v)} · ${esc(t)}"><span>${esc(k)}</span><div class="t"><div style="width:${100 * v / max}%"></div></div><span class="num" style="text-align:right">${hb(v)}</span></div>`).join("");
+  }
+
+  // ------------------------------------------------------------------ item registration per list
+  const candKey = c => reg(`c:${c.id}`, c.label, c.path, c.bytes, c.action === "info" ? [] : ["delete", ...(c.kind === "folder" && c.action === "review" && !inOD(c.path) ? ["archive"] : [])]);
+  const fileKey = (p, bytes, ops) => reg(`f:${p}`, p.split("\\").pop(), p, bytes, ops);
+  const fileOps = (p, extra = []) => blocked(p) || /^[a-z]:\\[^\\]+$/i.test(p) ? [] : inOD(p) ? ["offload", "delete", ...extra] : ["archive", "compress", "delete", ...extra];
+  // the server refuses these anyway; don't offer actions on them (system, program and app-data folders, profile roots)
+  const blocked = p => {
+    if (!APP || !APP.blocked) return false;
+    const l = p.toLowerCase().replace(/\\+$/, "");
+    return APP.blocked.exact.includes(l) || APP.blocked.under.some(u => l === u || l.startsWith(u + "\\")) || /^[a-z]:\\users$/.test(l);
+  };
+  const dirKey = n => reg(`d:${n[3]}`, n[2], n[3], n[4], blocked(n[3]) ? [] : inOD(n[3]) ? ["offload"] : ["archive", "compress"]);
+
+  // ================================================================== report rendering (re-run after each scan)
+  function renderAll() {
+  m = D ? D.meta : null; s = D ? D.scan : null;
+  PRIO = (D && D.priority_labels) || PRIO_DEFAULT;
+  $("#sub").innerHTML = D ? `${esc(m.host)} · ${esc(m.generated)} · scanned ${esc(m.roots.join(", "))} in ${m.duration_s}s · PC TidyUp ${esc(m.version)}`
+                          : "No report yet";
+  if (!D) {
+    $("#s-overview").innerHTML = `<div class="panel" style="text-align:center;padding:48px 20px"><h2>Welcome to PC TidyUp</h2>
+      <p class="muted">No report yet. The first scan of your drive takes a few minutes; you can follow its progress here.</p>
+      ${APP ? `<button class="btn primary" data-scan>Run the first scan</button>` : `<p>Start <code>PC-TidyUp.cmd</code> to scan.</p>`}</div>`;
+    tabs.filter(([id]) => id !== "overview" && id !== "settings").forEach(([id]) => $("#s-" + id).innerHTML = `<p class="muted">Run a scan first.</p>`);
+    $("[data-scan]")?.addEventListener("click", openScanDialog);
+    return;
+  }
+
+  // ------------------------------------------------------------------ overview: health, priority guide, gains
+  (function () {
+    const t = D.totals, el = $("#s-overview");
+    let html = "";
+    if (!APP) html += `<div class="note warn"><span class="ico">ℹ</span><span>This is a saved report. To <strong>run a scan, clean up, compress or archive from this page</strong>, start <code>PC-TidyUp.cmd</code> in the PC TidyUp folder - it opens this report as a live page.</span></div>`;
+    if (s.denied > 0 && !m.elevated) html += `<div class="note warn"><span class="ico">ⓘ</span><span>${num(s.denied)} folders could not be read (other users, system folders). ${APP ? "Use <strong>Restart as admin</strong> and rescan" : "Run PC TidyUp elevated"} to include them.</span></div>`;
+
+    const worst = D.disk.slice().sort((a, b) => a.free / a.total - b.free / b.total)[0];
+    if (worst) {
+      const lvl = worst.health || "good";
+      const pt0 = D.priority_totals || {};
+      const first = [1, 2, 3].find(p => pt0[p] > 0);
+      const txt = { good: ["✓", "Healthy"], warning: ["!", "Getting full"], critical: ["!!", "Critical - almost full"] }[lvl];
+      const advice = lvl === "good" ? "Nothing urgent. Use the plan below whenever convenient."
+        : !first ? "No big wins found by the rules - check <a href=\"#space\" data-go=\"space\">Where is the space</a> and <a href=\"#large\" data-go=\"large\">Largest files</a>."
+        : `Start with <strong>P${first} ${esc(PRIO[first][0])}</strong>: ${hb(pt0[first])}${first === 1 ? " can be freed with low risk" : ""}${APP ? " - actions are right below" : ""}.${first < 3 ? " Then work down the priorities." : ""}`;
+      html += `<div class="health ${lvl}"><div class="ico" aria-hidden="true">${txt[0]}</div><div><div class="t">Drive ${esc(worst.root)}: ${txt[1]} - ${hb(worst.free)} free (${(100 * worst.free / worst.total).toFixed(1)}%)</div>
+        <div class="muted">${advice}</div></div></div>`;
+    }
+
+    // priority guide
+    const plan = D.plan || [];
+    const pt = D.priority_totals || {};
+    const ptot = (pt[1] || 0) + (pt[2] || 0) + (pt[3] || 0);
+    html += `<h2>Priority guide</h2>
+      <div class="panel"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px"><strong>Space you can win, by priority</strong><span class="muted">${hb(ptot)} in P1-P3</span></div>
+      <div class="stack" role="img" aria-label="Reclaimable space by priority">${[1, 2, 3].map(p => pt[p] ? `<div title="P${p} ${esc(PRIO[p][0])}: ${hb(pt[p])}" style="width:${100 * pt[p] / Math.max(1, ptot)}%;background:var(--p${p})"></div>` : "").join("")}</div>
+      <div class="legend" style="margin-top:8px">${[1, 2, 3].map(p => `<span>${prioBadge(p)} ${hb(pt[p] || 0)} <span class="muted">- ${esc(PRIO[p][1])}</span></span>`).join("")}</div></div>
+      <div class="lanes">${[1, 2, 3].map(p => lane(p, plan.filter(x => x.prio === p && x.action !== "info"))).join("")}</div>
+      ${(() => { const p4 = plan.filter(x => x.prio === 4 && x.action !== "info"); return p4.length ? `<p class="muted">${prioBadge(4)} ${p4.length} smaller items (${hb(p4.reduce((a, x) => a + x.bytes, 0))}) - see <a href="#cleanup" data-go="cleanup">Clean up</a>.</p>` : ""; })()}`;
+
+    for (const d of D.disk) {
+      const gains = [["safe", t.safe], ["likely", t.likely], ["review", t.review], ["compress", D.compress.savings], ["offload", D.offload.bytes], ["archive", D.archive.bytes], ["dup", D.duplicates.wasted]];
+      const other = Math.max(0, d.used - gains.reduce((a, g) => a + g[1], 0));
+      const pct = v => (100 * v / d.total).toFixed(2) + "%";
+      const names = { safe: "low risk", likely: "likely obsolete", review: "your decision", compress: "compression saving", offload: "OneDrive offload", archive: "archive", dup: "duplicates" };
+      html += `<h2>Drive ${esc(d.root)}</h2><div class="panel"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <strong>${hb(d.used)} used of ${hb(d.total)}</strong><span class="muted"><strong style="color:var(--ink)">${hb(d.free)} free</strong> (${(100 * d.free / d.total).toFixed(1)}%)</span></div>
+        <div class="diskbar">${gains.filter(g => g[1] > 0).map(([k, v]) => `<div title="${names[k]}: ${hb(v)}" style="width:${pct(v)};background:var(--${k})"></div>`).join("")}<div title="other used: ${hb(other)}" style="width:${pct(other)};background:var(--free)"></div></div>
+        <div class="legend">${gains.map(([k, v]) => `<span><i class="dot" style="background:var(--${k})"></i>${names[k]} ${hb(v)}</span>`).join("")}<span><i class="dot" style="background:var(--free)"></i>other used</span><span><i class="dot" style="background:var(--soft);border:1px solid var(--line)"></i>free</span></div></div>`;
+    }
+    html += `<h2>By recommendation</h2><div class="grid">
+      ${tile("safe", "Low risk", t.safe, `${D.counts.safe} items · caches & temp`, "cleanup", "safe")}
+      ${tile("likely", "Likely obsolete", t.likely, `${D.counts.likely} items · logs, dumps, installers`, "cleanup", "likely")}
+      ${tile("review", "Your decision", t.review, `${D.counts.review} items · backups, models, archives`, "cleanup", "review")}
+      ${tile("compress", "Compression saves", D.compress.savings, `${num(D.compress.files)} files · ${hb(D.compress.bytes)} now`, "compress")}
+      ${tile("offload", "OneDrive offload", D.offload.bytes, `${num(D.offload.files)} synced files unused 6m+`, "offload")}
+      ${tile("archive", "Archive", D.archive.bytes, `${num(D.archive.files)} big files unused 1y+`, "archive")}
+      ${tile("dup", "Duplicate copies", D.duplicates.wasted, `${num(D.duplicates.groups_total)} groups`, "dups")}
+      ${tile("info", "Windows-managed", t.info, `${D.counts.info} items · advice only`, "cleanup", "info")}
+    </div>
+    <div class="two"><div><h2>By file type</h2><div class="panel bars" id="ov-cat"></div></div><div><h2>By last use</h2><div class="panel bars" id="ov-age"></div>
+      <p class="muted" style="font-size:12px">${m.atime_used ? "Last use = latest of last access and last modification." : "Last use = last modification."} OneDrive online-only files (${hb(s.cloud_bytes)}, ${num(s.cloud_files)} files) take no local space and are not included.</p></div></div>`;
+    el.innerHTML = html;
+    bars($("#ov-cat"), D.categories.slice(0, 14).map(c => [c[0], c[1], num(c[2]) + " files"]));
+    bars($("#ov-age"), D.age.map(c => [c[0], c[1], num(c[2]) + " files"]));
+  })();
+
+  function lane(p, rows) {
+    const total = rows.reduce((a, r) => a + r.bytes, 0);
+    const candKeys = rows.filter(r => r.kind === "candidate" && r.action !== "info" && !isDone(r.key)).map(r => r.key);
+    candKeys.forEach(k => { const c = D.candidates.find(c => `c:${c.id}` === k); if (c) candKey(c); });
+    const bulk = APP && candKeys.length ? `<button class="btn sm ${p === 1 ? "danger" : ""}" data-run="delete" data-keys="${esc(candKeys.join("\n"))}">Clean up all ${candKeys.length} (${hb(rows.filter(r => candKeys.includes(r.key)).reduce((a, r) => a + r.bytes, 0))})…</button>` : "";
+    const cards = rows.slice(0, 8).map(r => {
+      let act = "";
+      if (r.kind === "candidate") {
+        act = APP && r.action !== "info" ? `<button class="btn sm" data-run="delete" data-keys="${esc(r.key)}" ${isDone(r.key) ? "disabled" : ""}>Delete…</button>` : "";
+        act += `<a href="#cleanup" class="how" data-go="cleanup" data-filter="${esc(r.action)}">details</a>`;
+      } else {
+        const listKeys = r.kind === "offload" ? D.offload.items.map(i => fileKey(i.path, i.bytes, ["offload"])) : [];
+        act = (APP && r.kind === "offload" ? `<button class="btn sm" data-run="offload" data-keys="${esc(listKeys.join("\n"))}">Make all online-only…</button>` : "") +
+              `<a href="#${r.tab}" class="how" data-go="${r.tab}">review ${num(r.count)} item(s)</a>`;
+      }
+      return `<div class="card"><span class="l" title="${esc(r.label)}">${esc(r.label)}</span><span class="s">${hb(r.bytes)}</span>
+        ${r.path ? `<span class="p" title="${esc(r.path)}">${esc(r.path)}${revealBtn(r.path)}</span>` : ""}
+        <span class="a">${r.action ? `<span class="badge b-${r.action}">${ACT[r.action]}</span>` : ""}${r.growing ? `<span class="flag" title="Grew since the last scan">▲ grew ${hb(r.growing)}</span>` : ""}${stSpan(r.key || "")}${act}</span></div>`;
+    }).join("");
+    return `<div class="lane p${p}"><div class="lane-h">${prioBadge(p)}<div class="sum">${hb(total)}</div><div class="how">${esc(PRIO[p][1])} · ${rows.length} item(s)</div>${bulk ? `<div style="margin-top:6px">${bulk}</div>` : ""}</div>
+      <div class="lane-b">${cards || `<span class="muted" style="padding:0 4px 8px">Nothing here.</span>`}${rows.length > 8 ? `<a href="#cleanup" class="how" data-go="cleanup" style="padding:0 4px">+${rows.length - 8} more in Clean up</a>` : ""}</div></div>`;
+  }
+
+  // ------------------------------------------------------------------ clean-up candidates
+  function detailsHtml(r) {
+    if (r.kind === "files" && r.samples?.length)
+      return `<div class="how">${num(r.files)} matching file(s) here, e.g. ${r.samples.map(esc).join(", ")}${r.oldest ? ` · oldest ${esc(r.oldest)}` : ""}</div>`;
+    if (r.kind === "folder-contents" && r.items?.length)
+      return `<details class="item how"><summary>${num(r.items_total)} entries older than ${r.min_age} days</summary>${r.items.slice(0, 25).map(i => `<div><span class="path">${esc(i[0])}</span> - ${hb(i[1])}${revealBtn(i[0])}</div>`).join("")}${r.items_total > 25 ? `<div>... ${num(r.items_total - 25)} more</div>` : ""}</details>`;
+    return "";
+  }
+  function candTable(el, rows) {
+    const max = Math.max(1, ...rows.map(r => r.bytes));
+    table(el, [
+      { t: "Priority", val: r => (5 - (r.action === "info" ? 4.5 : r.prio || 4)) * 1e15 + r.bytes, html: r => prioBadge(r.prio || 4) + (r.growing ? `<div class="flag" style="margin-top:4px" title="Grew since the last scan">▲ ${hb(r.growing)}</div>` : "") },
+      { t: "Action", val: r => ["safe", "likely", "review", "info"].indexOf(r.action), html: r => `<span class="badge b-${r.action}">${ACT[r.action]}</span>` },
+      { t: "What", val: r => r.label, html: r => `<strong>${esc(r.label)}</strong><div class="how">${esc(r.reason)}</div>` },
+      { t: "Location", val: r => r.path, html: r => pathCell(r.path) + detailsHtml(r) },
+      sizeCol("Size", r => r.bytes, max),
+      { t: "Files", num: true, val: r => r.files, html: r => num(r.files) },
+      { t: "Last change", val: r => r.newest || "", html: r => `${esc(r.newest || "-")}${r.age_days != null ? `<div class="how">${r.age_days} days ago</div>` : ""}` },
+      { t: "How", val: r => r.how, html: r => `<span class="how">${esc(r.how)}</span>` }
+    ], rows, { sort: 0, limit: 150, key: candKey });
+  }
+  (function () {
+    const el = $("#s-cleanup");
+    let act = "all", q = "";
+    el.innerHTML = `<h2>Clean-up candidates</h2>
+      <p class="muted">Logs, temp files, caches, dumps, old installers and other files that are no longer relevant. Sizes are what you get back by deleting the item.${APP ? " Tick items and use the bar at the bottom; ages are re-checked right before anything is deleted." : ""}</p>
+      <div class="toolbar"><span id="cu-chips"></span><input type="search" id="cu-q" placeholder="Filter by path, rule or text..."></div>
+      <div id="cu-desc" class="muted" style="margin-bottom:8px"></div><div class="panel" id="cu-t"></div>
+      ${D.hidden_small?.count ? `<p class="muted">${num(D.hidden_small.count)} tiny items (${hb(D.hidden_small.bytes)} together) are not listed.</p>` : ""}`;
+    function render() {
+      const rows = D.candidates.filter(c => (act === "all" || c.action === act) && (!q || (c.path + " " + c.label + " " + c.reason + " " + c.rule).toLowerCase().includes(q)));
+      const sum = a => D.candidates.filter(c => a === "all" || c.action === a).reduce((x, c) => x + c.bytes, 0);
+      $("#cu-chips").innerHTML = ["all", "safe", "likely", "review", "info"].map(a => `<button class="chip ${a === act ? "on" : ""}" data-a="${a}">${a !== "all" ? `<i class="dot" style="background:var(--${a})"></i>` : ""}${a === "all" ? "All" : ACT[a]} · ${hb(sum(a))}</button>`).join(" ");
+      $("#cu-chips").querySelectorAll("button").forEach(b => b.onclick = () => { act = b.dataset.a; render(); });
+      $("#cu-desc").textContent = act === "all" ? "" : ACT_DESC[act];
+      candTable($("#cu-t"), rows);
+    }
+    $("#cu-q").oninput = e => { q = e.target.value.toLowerCase(); render(); };
+    setFilter = a => { act = a; render(); };
+    render();
+  })();
+
+  // ------------------------------------------------------------------ compress / offload / archive / large
+  const usedCol = { t: "Last used", val: r => r.used, html: r => `${esc(r.used)}<div class="how">${r.used_days} days</div>` };
+  (function () {
+    const c = D.compress, max = Math.max(1, ...c.items.map(i => i.bytes));
+    $("#s-compress").innerHTML = `<h2>Compression candidates</h2>
+      <div class="grid" style="margin-bottom:14px">${tile("compress", "Estimated saving", c.savings, "based on typical ratios per type")}${tile("info", "Files", c.bytes, num(c.files) + " compressible files")}</div>
+      <p class="muted">Text-like and uncompressed formats (logs, CSV/JSON/XML, SQL backups, databases, BMP/WAV, virtual disks) of at least ${m.thresholds.compress_min_mb} MB, unused for ${m.thresholds.compress_min_age_days}+ days. Application data (AppData, tool folders) is left out on purpose.</p>
+      <div class="panel"><strong>Two ways to compress</strong><ul class="how" style="margin:6px 0 0">
+        <li><strong>ZIP &amp; remove original</strong>: the file becomes <code>name.ext.zip</code>; PC TidyUp verifies the ZIP before deleting the original and keeps the original when the gain is under 10%.</li>
+        <li><strong>NTFS compression</strong>: files stay where they are and keep working (<code>compact /c</code>). Not used inside OneDrive or for files in active use (databases, running VMs).</li>
+        <li>Also available for folders on the <a href="#space" data-go="space">Where is the space</a> tab - e.g. zip an old project folder before archiving it.</li></ul></div>
+      <div class="panel" id="cp-t"></div>`;
+    table($("#cp-t"), [
+      { t: "File", val: r => r.path, html: r => pathCell(r.path) + (r.cloud ? ` <span class="how">(OneDrive)</span>` : "") },
+      { t: "Type", val: r => r.ext },
+      sizeCol("Size", r => r.bytes, max),
+      { t: "Est. saving", num: true, val: r => r.est, html: r => hb(r.est) }, usedCol
+    ], c.items, { sort: 3, key: r => fileKey(r.path, r.bytes, ["compress", "delete", ...(r.cloud ? [] : ["archive"])]) });
+
+    const o = D.offload, omax = Math.max(1, ...o.items.map(i => i.bytes));
+    $("#s-offload").innerHTML = `<h2>OneDrive / SharePoint: free up local space</h2>
+      <div class="grid" style="margin-bottom:14px">${tile("offload", "Can be freed", o.bytes, num(o.files) + " files")}${tile("info", "Already online-only", s.cloud_bytes, num(s.cloud_files) + " files, no local space")}</div>
+      <p class="muted">Synced files of at least ${m.thresholds.offload_min_mb} MB stored on this disk but not used for ${m.thresholds.offload_min_age_days}+ days. Making them online-only frees the space with zero data loss - they download again when opened.</p>
+      <div class="panel" id="od-t"></div>`;
+    table($("#od-t"), [
+      { t: "File", val: r => r.path, html: r => pathCell(r.path) + (r.pinned ? ` <span class="how">(always keep on device)</span>` : "") },
+      { t: "Type", val: r => r.cat }, sizeCol("Size", r => r.bytes, omax), usedCol
+    ], o.items, { key: r => fileKey(r.path, r.bytes, ["offload"]) });
+
+    const a = D.archive, amax = Math.max(1, ...a.items.map(i => i.bytes));
+    const aroot = (APP && APP.archive_root) || m.archive_root || "OneDrive\\TidyUp Archive";
+    $("#s-archive").innerHTML = `<h2>Archive to OneDrive</h2>
+      <div class="grid" style="margin-bottom:14px">${tile("archive", "Large & unused", a.bytes, num(a.files) + " files")}</div>
+      <div class="panel"><strong>How archiving works</strong><ol class="how" style="margin:6px 0 0;padding-left:18px">
+        <li>The item is <strong>moved</strong> (not copied - instant on the same drive) under one common root: <code>${esc(aroot)}</code>, keeping its original path (<code>C:\\Users\\me\\x.iso</code> → <code>…\\TidyUp Archive\\C\\Users\\me\\x.iso</code>).</li>
+        <li>It is flagged <strong>online-only</strong>: OneDrive uploads it, then frees the local space.</li>
+        <li>Optional: a <strong>link</strong> stays at the old location so paths keep working - a junction for folders (no admin needed), a symbolic link for files${APP ? (APP.symlink_ok ? " (available on this PC)" : " (needs Developer Mode on this PC - a .lnk shortcut is created instead)") : ""}. Opening it downloads the file on demand.</li>
+        <li>Everything is listed in <code>_TidyUp-Archive-Index.csv</code> in the archive root and below, with <strong>Restore</strong>.</li></ol>
+        <p class="how" style="margin:6px 0 0">Not archived: application data, system folders, items already in OneDrive (use <em>Make online-only</em>), folders with more than ${num((m.thresholds && 20000))} files (zip them first), names OneDrive does not allow.</p></div>
+      <p class="muted">Files of at least ${m.thresholds.archive_min_mb} MB, outside the cloud, not used for ${m.thresholds.archive_min_age_days}+ days. Whole folders can be archived from <a href="#space" data-go="space">Where is the space</a>.</p>
+      <div class="panel" id="ar-t"></div>
+      ${APP ? `<h2>Archived items</h2><div class="panel" id="ar-m"><span class="muted">Loading…</span></div>` : ""}`;
+    table($("#ar-t"), [
+      { t: "File", val: r => r.path, html: r => pathCell(r.path) },
+      { t: "Type", val: r => r.cat }, sizeCol("Size", r => r.bytes, amax), usedCol
+    ], a.items, { key: r => fileKey(r.path, r.bytes, ["archive", "compress", "delete"]) });
+
+    const L = D.large, lmax = Math.max(1, ...L.map(i => i.bytes));
+    $("#s-large").innerHTML = `<h2>Largest files</h2><p class="muted">The ${L.length} biggest local files, whatever their status. Actions are refused for system and application files.</p><div class="panel" id="lg-t"></div>`;
+    table($("#lg-t"), [
+      { t: "File", val: r => r.path, html: r => pathCell(r.path) },
+      { t: "Type", val: r => r.cat }, sizeCol("Size", r => r.bytes, lmax), usedCol
+    ], L, { key: r => fileKey(r.path, r.bytes, fileOps(r.path)) });
+  })();
+
+  // ------------------------------------------------------------------ duplicates
+  (function () {
+    const du = D.duplicates, el = $("#s-dups");
+    if (du.skipped) { el.innerHTML = `<h2>Duplicates</h2><p class="muted">Duplicate detection was skipped for this run.</p>`; return; }
+    el.innerHTML = `<h2>Duplicate files</h2>
+      <div class="grid" style="margin-bottom:14px">${tile("dup", "Held by extra copies", du.wasted, num(du.groups_total) + " groups of identical files")}</div>
+      <p class="muted">Identical local files of at least ${m.thresholds.duplicate_min_mb} MB in your own content.${du.timed_out ? " The time budget was reached, so this list is incomplete." : ""} ${APP ? "Tick the copies to delete - PC TidyUp always keeps at least one copy of each group." : "Keep one copy and delete the rest."}</p>
+      <div class="panel">${du.groups.map(g => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${hb(g.size)} × ${g.files.length}</strong> <span class="muted">· ${hb(g.wasted)} reclaimable${g.verified ? "" : " · sampled hash"}</span>
+        ${g.files.map(f => { const k = fileKey(f, g.size, ["delete"]); return `<div style="display:flex;gap:8px;align-items:center">${selBox(k)}<span>${pathCell(f)}</span>${stSpan(k)}</div>`; }).join("")}</div>`).join("") || `<span class="muted">No duplicates found.</span>`}</div>`;
+  })();
+
+  // ------------------------------------------------------------------ space tree
+  (function () {
+    const el = $("#s-space"), T = D.tree, kids = {};
+    T.forEach(n => (kids[n[1]] = kids[n[1]] || []).push(n));
+    Object.values(kids).forEach(a => a.sort((x, y) => y[4] - x[4]));
+    const open = new Set(T.filter(n => n[8] <= 1).map(n => n[0]));
+    el.innerHTML = `<h2>Where is the space</h2><p class="muted">Folders of at least ${m.thresholds.tree_min_mb} MB (up to ${m.thresholds.tree_max_depth} levels). Click a folder name to expand it.${APP ? " Tick a folder to archive it to OneDrive, zip it, or (inside OneDrive) make it online-only." : ""}</p>
+      <div class="panel tree"><div class="row hdr"><span></span><span>Folder</span><span style="text-align:right">Size</span><span style="text-align:right">Files</span><span style="text-align:right">Last change</span><span>Status</span></div><div id="tr"></div></div>
+      <h2>Top file extensions</h2><div class="panel bars" id="sp-ext"></div>`;
+    function rows(pid, depth) {
+      return (kids[pid] || []).map(n => {
+        const has = (kids[n[0]] || []).length, isOpen = open.has(n[0]);
+        const parentSize = pid >= 0 ? T[pid][4] : n[4];
+        const k = depth > 0 ? dirKey(n) : null;
+        return `<div class="row ${k && isDone(k) ? "done" : ""}" data-id="${n[0]}"><span>${k ? selBox(k) : ""}</span><span class="name" style="padding-left:${depth * 16}px" title="${esc(n[3])}"><span class="tog">${has ? (isOpen ? "▾" : "▸") : ""}</span>${esc(n[2])}
+          <div class="minibar" style="max-width:240px;margin-left:16px"><div style="width:${Math.max(1, 100 * n[4] / parentSize)}%"></div></div></span>
+          <span class="num" style="text-align:right">${hb(n[4])}</span><span class="num muted" style="text-align:right">${num(n[5])}</span><span class="muted" style="text-align:right">${esc(n[6] || "")}</span><span>${revealBtn(n[3])}${k ? stSpan(k) : ""}</span></div>` + (isOpen ? rows(n[0], depth + 1) : "");
+      }).join("");
+    }
+    const render = () => { $("#tr").innerHTML = rows(-1, 0) || `<p class="muted">No folder reached the size threshold.</p>`; };
+    $("#tr").onclick = e => { const nm = e.target.closest(".name"); if (!nm || e.target.closest("[data-copy],[data-reveal]")) return; const id = +nm.closest(".row").dataset.id; open.has(id) ? open.delete(id) : open.add(id); render(); };
+    render();
+    bars($("#sp-ext"), D.extensions.slice(0, 25).map(x => [x[0], x[1], num(x[2]) + " files"]));
+  })();
+
+  // ------------------------------------------------------------------ changes
+  (function () {
+    const h = D.history, el = $("#s-changes");
+    if (!h) { el.innerHTML = `<h2>Since last run</h2><p class="muted">This is the first run for these roots. Run PC TidyUp again later (or schedule it) to see what grew or shrank.</p>`; return; }
+    const free = D.disk.reduce((a, d) => a + d.free, 0), df = free - (h.prev_free || 0);
+    const dmax = Math.max(1, ...h.deltas.map(d => Math.abs(d.delta)));
+    el.innerHTML = `<h2>Since last run (${esc(h.previous)})</h2>
+      <div class="grid" style="margin-bottom:14px">
+        <div class="tile"><div class="k">Free space</div><div class="v">${hb(free)}</div><div class="d ${df >= 0 ? "neg" : "pos"}">${df >= 0 ? "▲ +" : "▼ "}${hb(Math.abs(df))} vs ${hb(h.prev_free)}</div></div>
+        <div class="tile"><div class="k">Scanned data</div><div class="v">${hb(s.bytes)}</div><div class="d">was ${hb(h.prev_scanned)}</div></div>
+        ${h.prev_totals ? `<div class="tile"><div class="k">Safe + likely</div><div class="v">${hb(D.totals.safe + D.totals.likely)}</div><div class="d">was ${hb((h.prev_totals.safe || 0) + (h.prev_totals.likely || 0))}</div></div>` : ""}
+      </div>
+      <p class="muted">Folders (up to 4 levels deep) that changed by 200 MB or more. Parent folders include their children's change.</p><div class="panel" id="ch-t"></div>`;
+    table($("#ch-t"), [
+      { t: "Folder", val: r => r.path, html: r => pathCell(r.path) },
+      { t: "Before", num: true, val: r => r.before, html: r => hb(r.before) },
+      { t: "Now", num: true, val: r => r.after, html: r => hb(r.after) },
+      { t: "Change", num: true, val: r => Math.abs(r.delta), html: r => `<span class="${r.delta > 0 ? "pos" : "neg"}">${r.delta > 0 ? "▲ +" : "▼ "}${hb(Math.abs(r.delta))}</span><div class="minibar"><div style="width:${100 * Math.abs(r.delta) / dmax}%;background:var(--${r.delta > 0 ? "dup" : "safe"})"></div></div>` }
+    ], h.deltas, { sort: 3 });
+  })();
+
+  // ------------------------------------------------------------------ about
+  $("#s-about").innerHTML = `<h2>How it works</h2><div class="panel">
+    <p>PC TidyUp walked <strong>${num(s.dirs)}</strong> folders and <strong>${num(s.files)}</strong> local files (${hb(s.bytes)}). ${num(s.cloud_files)} online-only cloud files were counted separately and never opened. ${num(s.links)} links/junctions were not followed; ${num(s.denied)} folders were not readable${m.elevated ? "" : " (not elevated)"}; ${num(s.errors)} other errors.</p>
+    <h3>Priorities</h3><ul>
+      <li>${prioBadge(1)} big (≥ 500 MB) and low risk: caches and temp that apps rebuild, stale OneDrive files to make online-only. Low risk is not zero risk - close the apps first and keep backups.</li>
+      <li>${prioBadge(2)} probably obsolete (old logs, dumps, installers, build output) or smaller caches - glance, then act.</li>
+      <li>${prioBadge(3)} needs your judgement: backups, models, installer caches, archive candidates, duplicates.</li>
+      <li>${prioBadge(4)} small gains. Thresholds live in <code>tidyup.config.json</code> → <code>priority</code>. ▲ marks items that grew since the last scan.</li></ul>
+    <h3>Actions (when opened through PC-TidyUp.cmd)</h3><ul>
+      <li><strong>Delete</strong> - choose <em>Move to Recycle Bin</em> (undoable; space only comes back when the bin is emptied) or <em>Delete permanently</em> (frees space now). Ages are re-checked first; for permanent deletes, tools such as <code>npm cache clean</code> are used when the rule names one.</li>
+      <li><strong>Compress</strong> - ZIP with verification, or NTFS compression.</li>
+      <li><strong>Archive to OneDrive</strong> - move under one archive root, make online-only, optional link; restorable.</li>
+      <li><strong>Make online-only</strong> - OneDrive "Free up space".</li>
+      <li>Every action is written to <code>reports\\actions.log</code>.</li></ul>
+    <h3>Other ways to act</h3>
+    <p>Each scan also writes a PowerShell cleanup script (dry run by default): <code>${esc(m.cleanup_script || "")}</code> ${copyBtn(m.cleanup_script || "")}</p>
+    <p>Schedule a weekly scan with <code>.\\Register-TidyUpTask.ps1</code>. Thresholds and archive root: <code>tidyup.config.json</code>.</p>
+    <h3>Your own rules</h3>
+    <p>Add rules to <code>tidyup.rules.user.json</code> (examples inside). They are checked before the built-in rules, can replace a built-in rule (same <code>id</code>) or switch it off (<code>"disabled": true</code>). Then check them with <code>python tidyup.py --check-rules</code>, see what matches a path with <code>python tidyup.py --explain "C:\\path"</code>, and run a new scan.</p>
+    ${m.denied_samples?.length ? `<details class="how"><summary>Examples of unreadable folders</summary>${m.denied_samples.map(p => `<div><span class="path">${esc(p)}</span>${revealBtn(p)}</div>`).join("")}</details>` : ""}
+    </div>`;
+  }   // end renderAll
+
+  // Swap in the newest report without reloading the page: same tab, same scroll position, selections kept.
+  let renders = 0;
+  async function refreshReport() {
+    const j = await api("/api/data");
+    if (!j.data) return;
+    const tab = (location.hash || "").slice(1), y = window.scrollY;
+    D = j.data;
+    pageStamp = D.meta.stamp;
+    STATE = j.state || {};
+    Object.keys(SEEN).forEach(k => delete SEEN[k]);
+    Object.keys(STATE).forEach(k => { SEEN[k] = JSON.stringify(STATE[k]); });
+    ITEMS.clear();
+    renderAll();
+    renders++;
+    [...SEL].forEach(k => { if (!ITEMS.has(k) || isDone(k)) SEL.delete(k); });   // keep selections that still exist
+    barSig = ""; updateBar();
+    show(tabs.some(t => t[0] === tab) ? tab : "overview", null, true);
+    window.scrollTo(0, y);
+  }
+
+  renderAll();
+  if (location.search.includes("tidyupdebug")) {   // diagnostics: count DOM changes per region (open with ?tidyupdebug)
+    const cnt = {}; let heights = new Set();
+    try { const n = +(sessionStorage.getItem("tu-loads") || 0) + 1; sessionStorage.setItem("tu-loads", n); console.log("TIDYUPLOAD " + n); } catch (e) {}
+    new MutationObserver(ms => ms.forEach(mu => { const r = mu.target.closest?.("#job,#bar,main,header,nav")?.id || mu.target.parentElement?.closest?.("#job,#bar,main,header,nav")?.tagName || "other"; cnt[r] = (cnt[r] || 0) + 1; }))
+      .observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
+    setInterval(() => { heights.add($("#job").offsetHeight); console.log("TIDYUPDEBUG " + JSON.stringify({ cnt, jobHeights: [...heights], job: JOB && JOB.state, renders, stamp: pageStamp })); }, 1000);
+  }
+  const h0 = (location.hash || "").slice(1); show(tabs.some(t => t[0] === h0) ? h0 : "overview");
+  if (APP) initApp();
+
+  // ================================================================== live app
+  function initApp() {
+    $("#scanbtn")?.addEventListener("click", openScanDialog);
+    $("#stopbtn")?.addEventListener("click", async () => {
+      if (!confirmInline("Stop the PC TidyUp app? The page stays readable; start PC-TidyUp.cmd to use actions again.")) return;
+      try { await api("/api/shutdown", {}); } catch (e) {}
+      setConn(false, "Stopped");
+    });
+    $("#elev")?.addEventListener("click", async () => {
+      try { await api("/api/elevate", {}); setConn(true, "Restarting as administrator… accept the Windows prompt"); waitForElevated(); }
+      catch (e) { alertJob("Could not restart: " + e.message); }
+    });
+    $("#disclaimer-link").href = "/disclaimer";
+    if (!APP.disclaimer_accepted) openDisclaimer();
+    if (APP.job) handleJob(APP.job, true);
+    poll();
+  }
+  function confirmInline(msg) { return window.confirm(msg); }
+  async function api(path, body) {
+    const r = await fetch(path, body === undefined ? { headers: { "X-TidyUp-Token": APP.token } } :
+      { method: "POST", headers: { "Content-Type": "application/json", "X-TidyUp-Token": APP.token }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    return j;
+  }
+  function setConn(ok, text) {
+    const c = $("#conn"); if (!c) return;
+    if (c.classList.contains("off") === ok) c.classList.toggle("off", !ok);
+    setText(c.querySelector("span"), text);
+  }
+  async function poll() {
+    clearTimeout(pollTimer);
+    try {
+      const st = await api(`/api/status?log_from=${logFrom}`);
+      failures = 0; setConn(true, "Connected" + (st.elevated ? " · administrator" : ""));
+      if (st.job) handleJob(st.job, false, st.stamp);
+    } catch (e) {
+      failures++;
+      if (failures > 1) setConn(false, "PC TidyUp app not running - start PC-TidyUp.cmd");
+    }
+    pollTimer = setTimeout(poll, JOB && JOB.state === "running" ? 1000 : 15000);
+  }
+  async function waitForElevated() {
+    for (let i = 0; i < 90; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      try { const r = await fetch("/api/ping"); const j = await r.json(); if (j.elevated) { location.reload(); return; } } catch (e) {}
+    }
+    setConn(false, "Administrator restart did not come up - start PC-TidyUp.cmd again");
+  }
+
+  function handleJob(job, initial, serverStamp) {
+    const box = $("#job");
+    const isNew = !JOB || JOB.id !== job.id;
+    // a job we haven't seen counts as "just finished" only if this page started it
+    const wasRunning = isNew ? (job.state === "running" || job.id === startedHere) : JOB.state === "running";
+    if (isNew) { logFrom = 0; box.innerHTML = ""; }
+    JOB = job;
+    Object.assign(STATE, job.results || {});
+    refreshChips(Object.keys(job.results || {}));
+    if (initial && job.state !== "running") { hiddenJob = job.id; return; }   // don't pop up an old finished job on load
+    if (job.id === hiddenJob && job.state !== "running") return;             // closed by the user
+    if (!wasRunning && !isNew && job.state !== "running" && !job.log?.length) return;   // finished and unchanged
+    renderJob(job);
+    if (job.log?.length) {
+      const lg = $(".jlog", box);
+      if (lg) { lg.insertAdjacentHTML("beforeend", job.log.map(l => `<div class="${l[1]}">${esc(l[0])} ${esc(l[2])}</div>`).join("")); lg.scrollTop = lg.scrollHeight; }
+      logFrom = job.log_next;
+    }
+    if (wasRunning && job.state !== "running") {
+      updateBar();
+      // update the report in place when the app has a newer one than the page shows (no page reload)
+      if (job.kind === "scan" && job.state === "done" && serverStamp && serverStamp !== pageStamp)
+        refreshReport().then(() => setText($(".t", box), `${job.title} - finished · report updated`))
+          .catch(err => setText($(".t", box), `${job.title} - finished · could not load the new report (${err.message}) - press F5`));
+      if (job.kind === "action" && $("#ar-m")) loadManifest();
+    }
+  }
+  function renderJob(job) {
+    const box = $("#job");
+    box.classList.add("on");
+    let pct = null, line = "";
+    const p = job.progress || {};
+    if (job.kind === "scan") {
+      if (p.phase === "scan") {
+        if (p.expected) pct = Math.min(99, 100 * (p.bytes || 0) / p.expected);
+        line = `${num(p.dirs)} folders · ${num(p.files)} files · ${hb(p.bytes)} scanned${p.expected ? ` of ~${hb(p.expected)}` : ""}`;
+      } else if (p.phase === "duplicates") { pct = p.total ? 100 * p.done / p.total : null; line = `Checking duplicates: ${num(p.done)} / ${num(p.total)} size groups`; }
+      else if (p.phase === "report") { pct = 100; line = "Writing the report…"; }
+    } else {
+      pct = job.bytes_total ? Math.min(100, 100 * job.bytes_done / job.bytes_total) : (job.items_total ? 100 * job.items_done / job.items_total : null);
+      line = `${job.items_done} / ${job.items_total} items · ${hb(job.bytes_done)} of ${hb(job.bytes_total)} processed · ${hb(job.freed)} freed` +
+        (job.recycled ? ` · ${hb(job.recycled)} in the Recycle Bin (empty it to get that space back)` : "");
+    }
+    const running = job.state === "running";
+    const stateTxt = { running: "running", done: "finished", cancelled: "cancelled", failed: "failed" }[job.state];
+    const tail = running ? "" : job.kind === "scan" ? (job.state === "done" ? " - loading the new report…" : "") :
+      ` - ${hb(job.freed)} freed. Run a new scan to refresh the numbers.`;
+    if (!box.innerHTML) box.innerHTML = `<div class="jhead"><span class="t"></span><span class="muted el"></span>
+        <button class="btn sm" data-j="cancel">Cancel</button><button class="btn sm" data-j="rescan">Run new scan</button><button class="btn sm" data-j="close">Close</button></div>
+      <div class="prog"><div></div></div><div class="how ln"></div><div class="path cur muted"></div>
+      <details open><summary class="how">Log</summary><div class="jlog"></div></details>`;
+    setText($(".t", box), `${job.title} - ${stateTxt}${tail}`);
+    setText($(".el", box), `${job.elapsed}s`);
+    setText($(".ln", box), line + (job.error ? ` · ${job.error}` : ""));
+    const cur = running ? (job.current || p.path || "") : "";
+    setText($(".cur", box), cur);
+    $(".cur", box).title = cur;
+    const pg = $(".prog", box);
+    pg.classList.toggle("ind", running && pct === null);
+    const w = (pct === null ? 0 : Math.round(pct * 10) / 10) + "%";
+    if ($(".prog div", box).style.width !== w) $(".prog div", box).style.width = w;
+    const show = (sel, on) => { const b = $(sel, box); const d = on ? "" : "none"; if (b.style.display !== d) b.style.display = d; };
+    show("[data-j=cancel]", running);
+    show("[data-j=close]", !running);
+    show("[data-j=rescan]", !running && job.kind === "action");
+    $("[data-j=cancel]", box).onclick = () => api("/api/cancel", {}).catch(() => {});
+    $("[data-j=close]", box).onclick = () => { hiddenJob = job.id; box.classList.remove("on"); };
+    $("[data-j=rescan]", box).onclick = openScanDialog;
+  }
+  function alertJob(msg) {
+    const box = $("#job"); box.classList.add("on");
+    box.innerHTML = `<div class="jhead"><span class="t" style="color:var(--danger)">${esc(msg)}</span><button class="btn sm" id="jx">Close</button></div>`;
+    $("#jx").onclick = () => { box.classList.remove("on"); box.innerHTML = ""; };
+  }
+
+  // ------------------------------------------------------------------ dialogs
+  // One-time acceptance of the disclaimer; the app refuses scans and actions until it is accepted (enforced server-side too).
+  function openDisclaimer(then) {
+    const dlg = $("#dlg");
+    dlg.innerHTML = `<form method="dialog"><div class="dlg-h"><h2>Before you start: disclaimer</h2></div><div class="dlg-b">
+      <div class="note crit"><span class="ico">!</span><span>PC TidyUp can <strong>delete, move, compress and change files</strong>. You use it <strong>entirely at your own risk and responsibility</strong>.</span></div>
+      <ul class="how" style="margin-top:0">
+        <li>It is provided <strong>"as is", without any warranty</strong>. Findings and recommendations are automated and can be wrong.</li>
+        <li>To the maximum extent permitted by law, the creator and publisher (Mehrdad Ghazvinizadeh) and any contributors <strong>are not liable for any damage, harm, data loss, data corruption or disruption</strong> of any kind, however caused.</li>
+        <li><strong>Make backups</strong> and review every action before you confirm it. Permanent deletion cannot be undone.</li>
+        <li>On a computer or data of your employer or another organisation, <strong>get their permission</strong> first.</li></ul>
+      <details><summary class="how">Read the full disclaimer</summary><pre class="explain" id="disc-text" style="max-height:260px;overflow:auto">Loading…</pre></details>
+      <label class="opt"><input type="checkbox" id="disc-ok"><span>I have read and accept the disclaimer. I use PC TidyUp entirely at my own risk, and I am responsible for backups and for every action I confirm.</span></label>
+      <p class="err-chip" id="disc-err" hidden style="max-width:none"></p></div>
+      <div class="dlg-f"><button class="btn" value="cancel">Not now (read-only)</button><button class="btn primary" id="disc-accept" disabled>Accept and continue</button></div></form>`;
+    dlg.showModal();
+    fetch("/disclaimer").then(r => r.text()).then(t => { $("#disc-text").textContent = t; }).catch(() => {});
+    $("#disc-ok").onchange = e => { $("#disc-accept").disabled = !e.target.checked; };
+    $("#disc-accept").onclick = async e => {
+      e.preventDefault();
+      try {
+        await api("/api/disclaimer/accept", { accept: true, version: APP.disclaimer_version });
+        APP.disclaimer_accepted = true; dlg.close();
+        if (then) then();
+      } catch (err) { $("#disc-err").hidden = false; $("#disc-err").textContent = err.message; }
+    };
+  }
+  const needsDisclaimer = then => { if (APP && !APP.disclaimer_accepted) { openDisclaimer(then); return true; } return false; };
+
+  function openScanDialog() {
+    if (needsDisclaimer(openScanDialog)) return;
+    const dlg = $("#dlg");
+    const roots = D ? D.meta.roots.join("; ") : "C:\\";
+    dlg.innerHTML = `<form method="dialog"><div class="dlg-h"><h2>Run a new scan</h2></div><div class="dlg-b">
+      <label class="how" for="sc-roots">Folders or drives to scan (separate with ;)</label>
+      <input class="field" id="sc-roots" value="${esc(roots)}">
+      <label class="opt"><input type="checkbox" id="sc-nodup"><span>Skip duplicate detection <span class="how">faster; duplicates tab stays empty</span></span></label>
+      <p class="how">A full drive scan takes a few minutes. You can keep using this page; progress appears at the top. ${APP && !APP.elevated ? "Not running as administrator: some system folders are skipped." : ""}</p>
+      </div><div class="dlg-f"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="ok" id="sc-go">Start scan</button></div></form>`;
+    dlg.showModal();
+    $("#sc-go").onclick = async e => {
+      e.preventDefault();
+      const r = $("#sc-roots").value.split(";").map(x => x.trim()).filter(Boolean);
+      try { const j = await api("/api/scan", { roots: r, no_duplicates: $("#sc-nodup").checked }); startedHere = j.job.id; dlg.close(); handleJob(j.job); poll(); }
+      catch (err) { alert("Could not start the scan: " + err.message); }
+    };
+  }
+
+  function openConfirm(op, keys) {
+    if (!APP) return;
+    if (needsDisclaimer(() => openConfirm(op, keys))) return;
+    keys = keys.filter(k => k && ITEMS.has(k) && !isDone(k));
+    if (!keys.length) return;
+    if (JOB && JOB.state === "running") { alert("Another task is still running - wait for it or cancel it."); return; }
+    const items = keys.map(k => ITEMS.get(k));
+    const total = items.reduce((a, i) => a + (i.bytes || 0), 0);
+    const odFiles = items.filter(i => inOD(i.path)).length;
+    const nonSafe = op === "delete" ? items.filter(i => { const c = i.key.startsWith("c:") && D.candidates.find(c => `c:${c.id}` === i.key); return !c || c.action !== "safe"; }).length : 0;
+    let opts = "", warn = "", needAck = false, verb = OPS[op].label;
+    if (op === "delete") {
+      // default: Recycle Bin, unless everything selected is a regenerable cache (recycling those only delays freeing space)
+      const permDefault = nonSafe === 0;
+      if (nonSafe) warn += `<div class="note warn"><span class="ico">!</span><span>${nonSafe} of these are not plain caches (likely obsolete, your decision, or individual files). Check the list.</span></div>`;
+      if (odFiles) warn += `<div class="note warn"><span class="ico">!</span><span>${odFiles} item(s) are in OneDrive: deleting them also removes them from the cloud (recoverable from the OneDrive recycle bin).</span></div>`;
+      opts = `<div class="panel" style="margin:10px 0 6px;padding:10px 14px">
+        <label class="opt"><input type="radio" name="dm" value="recycle" ${permDefault ? "" : "checked"}><span><strong>Move to Recycle Bin</strong> - can be undone
+          <span class="how">Restore from the Recycle Bin if you need something back. <strong>The disk space is only freed when the Recycle Bin is emptied.</strong> Items larger than the Recycle Bin are skipped (never deleted silently); when it is full, Windows drops its oldest items.</span>
+          <span class="how" id="rbinfo">Checking the Recycle Bin…</span></span></label>
+        <label class="opt"><input type="radio" name="dm" value="permanent" ${permDefault ? "checked" : ""}><span><strong>Delete permanently</strong> - frees the space right away
+          <span class="how">Cannot be undone. Best for caches and temp files, which apps rebuild by themselves${permDefault ? " - which is all you selected" : ""}.</span></span></label></div>
+        ${D && D.health === "critical" ? `<div class="note crit"><span class="ico">!!</span><span>Your drive is almost full: moving items to the Recycle Bin does <strong>not</strong> free space until you empty it.</span></div>` : ""}
+        <label class="opt" id="ackrow"><input type="checkbox" id="ack"><span>I understand that ${items.length} item(s) (${hb(total)}) are <strong>permanently deleted</strong>.</span></label>
+        <p class="how">Close browsers, Teams, VS Code and Visual Studio first so their caches are not locked. Anything changed more recently than its rule allows is kept.</p>`;
+    } else if (op === "compress") {
+      opts = `<label class="opt"><input type="radio" name="cm" value="zip" checked><span><strong>ZIP &amp; remove original</strong><span class="how">Smallest result. The ZIP is verified before the original is deleted; the original is kept if the gain is under 10%.</span></span></label>
+        <label class="opt"><input type="radio" name="cm" value="ntfs"><span><strong>NTFS compression</strong><span class="how">Files stay usable in place, typically 30-70% smaller for text. Not applied inside OneDrive.</span></span></label>`;
+    } else if (op === "archive") {
+      const d = APP.archive_defaults || {};
+      opts = `<p>Destination: <code>${esc(APP.archive_root)}</code> (original paths are kept below it).</p>
+        <label class="opt"><input type="checkbox" id="oo" ${d.make_online_only !== false ? "checked" : ""}><span><strong>Make online-only after upload</strong><span class="how">OneDrive uploads the items, then frees the local space. Untick to keep a local copy.</span></span></label>
+        <label class="opt"><input type="checkbox" id="lk" ${d.leave_link ? "checked" : ""}><span><strong>Leave a link at the original location</strong><span class="how">Folders get a junction, files a symbolic link${APP.symlink_ok ? "" : " - not allowed on this PC without Developer Mode, so a <code>.lnk</code> shortcut is created instead"}. Programs and scripts that use the old path keep working; opening downloads from OneDrive on demand.</span></span></label>`;
+      warn = `<div class="note warn"><span class="ico">ⓘ</span><span>Make sure the OneDrive account has room for ${hb(total)}. Items are refused when they are application data, too many files (zip the folder first) or have names OneDrive does not accept.</span></div>`;
+    } else if (op === "offload") {
+      opts = `<p class="how">The files stay in OneDrive and in File Explorer; only the local copy is removed. Files set to "Always keep on this device" are switched to online-only too.</p>`;
+    } else if (op === "restore") {
+      opts = `<p class="how">Downloads the archived item from OneDrive back to its original location, removes the link, then deletes the archived copy.</p>`;
+    }
+    const dlg = $("#dlg");
+    dlg.innerHTML = `<form method="dialog"><div class="dlg-h"><h2>${esc(verb)}: ${items.length} item(s), ${hb(total)}</h2></div><div class="dlg-b">${warn}
+      <div class="dlg-list">${items.slice(0, 200).map(i => `<div><span class="path">${esc(i.path || i.label)}</span><span class="num">${hb(i.bytes)}</span></div>`).join("")}${items.length > 200 ? `<div class="muted">… ${items.length - 200} more</div>` : ""}</div>
+      ${opts}<p class="how" style="margin-bottom:0">You confirm this action at your own risk - make sure you have backups. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a></p></div><div class="dlg-f"><button class="btn" value="cancel">Cancel</button><button class="btn ${op === "delete" ? "danger" : "primary"}" id="go" ${needAck ? "disabled" : ""}>${esc(verb)} ${items.length} item(s)</button></div></form>`;
+    dlg.showModal();
+    const syncDelete = () => {                       // the extra confirmation is only needed for permanent deletes
+      const mode = dlg.querySelector("input[name=dm]:checked")?.value;
+      if (!mode) return;
+      $("#ackrow").style.display = mode === "permanent" ? "" : "none";
+      $("#go").disabled = mode === "permanent" && !$("#ack").checked;
+      $("#go").textContent = (mode === "permanent" ? "Delete permanently " : "Move to Recycle Bin ") + `${items.length} item(s)`;
+    };
+    if (op === "delete") {
+      dlg.querySelectorAll("input[name=dm]").forEach(r => r.addEventListener("change", syncDelete));
+      $("#ack").addEventListener("change", syncDelete);
+      syncDelete();
+      api("/api/recyclebin").then(rb => {
+        const el = $("#rbinfo"); if (!el) return;
+        if (rb.enabled === false) {
+          el.innerHTML = `<strong style="color:var(--danger)">The Recycle Bin is switched off on this drive</strong> - choose Delete permanently, or turn it on in Recycle Bin properties.`;
+          const r = dlg.querySelector("input[value=recycle]"); r.disabled = true; dlg.querySelector("input[value=permanent]").checked = true; syncDelete();
+        } else if (rb.enabled) {
+          const big = items.filter(i => i.bytes > rb.max_bytes);
+          el.innerHTML = `Recycle Bin on ${esc(rb.drive)}: ${hb(rb.used_bytes)} used of max ${hb(rb.max_bytes)}${rb.estimated ? " (estimated)" : ""}.` +
+            (big.length ? ` <strong>${big.length} item(s) are larger than that and would be skipped.</strong>` : "") +
+            (rb.used_bytes + total > rb.max_bytes ? " Older items in the Recycle Bin will be dropped to make room." : "");
+        } else el.textContent = "";
+      }).catch(() => {});
+    } else if ($("#ack")) $("#ack").addEventListener("change", e => { $("#go").disabled = !e.target.checked; });
+    $("#go").onclick = async e => {
+      e.preventDefault();
+      const options = {};
+      if (op === "delete") options.mode = dlg.querySelector("input[name=dm]:checked").value;
+      if (op === "compress") options.mode = dlg.querySelector("input[name=cm]:checked").value;
+      if (op === "archive") { options.online_only = $("#oo").checked; options.leave_link = $("#lk").checked; options.shortcut_fallback = true; }
+      try {
+        const j = await api("/api/action", { op, keys, options });
+        dlg.close(); keys.forEach(k => SEL.delete(k)); $$("input.sel,input.selall").forEach(x => { if (!SEL.has(x.dataset.key)) x.checked = false; });
+        startedHere = j.job.id; handleJob(j.job); updateBar(); poll();
+      } catch (err) { alert(err.message); }
+    };
+  }
+
+  // ================================================================== settings tab
+  const CFG_GROUPS = [
+    { id: "scan", title: "Scan", fields: [
+      { k: "roots", t: "list", wide: true, label: "Folders or drives to scan", help: "One per line, e.g. C:\\ or D:\\Data" },
+      { k: "duplicates", t: "bool", label: "Look for duplicate files", help: "Adds up to a few minutes to a scan" },
+      { k: "use_last_access_time", t: "select", label: "'Last used' is based on", opts: [["auto", "Automatic - last access when Windows tracks it (recommended)"], [true, "Last access + last change"], [false, "Last change only"]] },
+      { k: "keep_reports", t: "int", unit: "reports", label: "Keep this many reports" } ] },
+    { id: "thr", title: "Thresholds", help: "What counts as big, old or worth listing. Applied at the next scan.", fields: [
+      { k: "thresholds.min_candidate_mb", unit: "MB", label: "Hide clean-up items smaller than" },
+      { k: "thresholds.compress_min_mb", unit: "MB", label: "Compress: files from" },
+      { k: "thresholds.compress_min_age_days", unit: "days unused", label: "Compress: when unused for" },
+      { k: "thresholds.offload_min_mb", unit: "MB", label: "OneDrive offload: files from" },
+      { k: "thresholds.offload_min_age_days", unit: "days unused", label: "OneDrive offload: when unused for" },
+      { k: "thresholds.archive_min_mb", unit: "MB", label: "Archive: files from" },
+      { k: "thresholds.archive_min_age_days", unit: "days unused", label: "Archive: when unused for" },
+      { k: "thresholds.duplicate_min_mb", unit: "MB", label: "Duplicates: files from" },
+      { k: "thresholds.duplicate_full_hash_max_mb", unit: "MB", label: "Duplicates: full content check up to" },
+      { k: "thresholds.duplicate_time_budget_s", unit: "seconds", label: "Duplicates: stop checking after" },
+      { k: "thresholds.tree_min_mb", unit: "MB", label: "Where is the space: folders from" },
+      { k: "thresholds.tree_max_depth", unit: "levels", label: "Where is the space: depth" },
+      { k: "thresholds.large_file_top_n", unit: "files", label: "Largest files: list length" },
+      { k: "thresholds.max_rows", unit: "rows", label: "Max rows per list" } ] },
+    { id: "prio", title: "Priorities & disk health", help: "Where an item lands in the priority guide, and when the drive counts as getting full.", fields: [
+      { k: "priority.safe_p1_mb", unit: "MB", label: "P1 Do now: low-risk items from" },
+      { k: "priority.offload_p1_mb", unit: "MB", label: "P1 Do now: OneDrive offload from" },
+      { k: "priority.safe_p2_mb", unit: "MB", label: "P2 Quick check: low-risk items from" },
+      { k: "priority.likely_p2_mb", unit: "MB", label: "P2 Quick check: likely-obsolete items from" },
+      { k: "priority.compress_p2_mb", unit: "MB saved", label: "P2 Quick check: compression from" },
+      { k: "priority.review_p3_mb", unit: "MB", label: "P3 Decide: your-decision items from" },
+      { k: "priority.info_p3_mb", unit: "MB", label: "P3 Decide: Windows-managed items from" },
+      { k: "priority.archive_p3_mb", unit: "MB", label: "P3 Decide: archive candidates from" },
+      { k: "priority.duplicates_p3_mb", unit: "MB", label: "P3 Decide: duplicates from" },
+      { k: "priority.critical_free_pct", unit: "% free", label: "Critical when free space is below" },
+      { k: "priority.critical_free_gb", unit: "GB free", label: "… or below" },
+      { k: "priority.warning_free_pct", unit: "% free", label: "Warning when free space is below" } ] },
+    { id: "arch", title: "Archive to OneDrive", fields: [
+      { k: "archive.root", t: "text", wide: true, label: "Archive root (common folder for everything archived)", help: "{onedrive} = your OneDrive folder. Items keep their original path below it." },
+      { k: "archive.make_online_only", t: "bool", label: "Make archived items online-only" },
+      { k: "archive.leave_link", t: "bool", label: "Leave a link at the old location by default" },
+      { k: "archive.shortcut_fallback", t: "bool", label: "Create a shortcut when a symbolic link is not allowed" },
+      { k: "archive.max_folder_files", t: "int", unit: "files", label: "Refuse folders with more files than" } ] },
+    { id: "prot", title: "Protection & exclusions", help: "Patterns: * = inside one folder, ** = any depth, {a,b} = alternatives; variables are listed below.", fields: [
+      { k: "protected", t: "list", label: "Protected - no file-level advice or actions", help: "C:\\Windows, Program Files and ProgramData always stay protected." },
+      { k: "advice_exclude", t: "list", label: "Application data - no compress / archive / duplicate advice" },
+      { k: "duplicates_exclude", t: "list", label: "Ignore duplicates in" },
+      { k: "skip", t: "list", label: "Do not scan at all" },
+      { k: "cloud_sync_roots", t: "list", label: "Extra synced folders (e.g. SharePoint libraries)" } ] },
+    { id: "app", title: "App", fields: [
+      { k: "app.port", t: "int", unit: "(0 = any free port)", label: "Port", help: "Used the next time PC TidyUp starts." },
+      { k: "app.idle_shutdown_minutes", t: "num", unit: "minutes", label: "Stop the app when no page is open for" } ] }
+  ];
+  var SET = null, CFG = null, settingsDirty = false;   // var: the page may open on this tab before this line runs
+  const getK = (o, k) => k.split(".").reduce((a, p) => (a == null ? undefined : a[p]), o);
+  const setK = (o, k, v) => { const ps = k.split("."); let a = o; ps.slice(0, -1).forEach(p => { a[p] = a[p] && typeof a[p] === "object" ? a[p] : {}; a = a[p]; }); a[ps[ps.length - 1]] = v; };
+  const ACT_OPTS = () => ["safe", "likely", "review", "info"].map(a => [a, `${ACT[a]} - ${ACT_DESC[a]}`]);
+  const slug = t => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+  window.addEventListener("beforeunload", e => { if (settingsDirty) { e.preventDefault(); e.returnValue = ""; } });
+
+  async function loadSettings(force) {
+    const el = $("#s-settings");
+    if (!APP) { el.innerHTML = `<h2>Settings</h2><div class="note warn"><span class="ico">ℹ</span><span>Settings can be viewed and edited when PC TidyUp runs as an app: start <code>PC-TidyUp.cmd</code>.</span></div>`; return; }
+    if (SET && !force) return;
+    el.innerHTML = `<p class="muted">Loading settings…</p>`;
+    try { SET = await api("/api/settings"); } catch (e) { el.innerHTML = `<p class="err-chip">Could not load settings: ${esc(e.message)}</p>`; return; }
+    CFG = JSON.parse(JSON.stringify(SET.config));
+    renderSettings();
+  }
+  function fieldHtml(f) {
+    const v = getK(CFG, f.k);
+    const id = "cf-" + f.k.replace(/\W/g, "_");
+    let input;
+    if (f.t === "bool") input = `<label class="row"><input type="checkbox" id="${id}" data-k="${f.k}" data-t="bool" ${v ? "checked" : ""}> <span>${esc(f.label)}</span></label>`;
+    else if (f.t === "select") input = `<select class="field" id="${id}" data-k="${f.k}" data-t="select">${f.opts.map(([ov, ol]) => `<option value='${esc(JSON.stringify(ov))}' ${JSON.stringify(ov) === JSON.stringify(v ?? "auto") ? "selected" : ""}>${esc(ol)}</option>`).join("")}</select>`;
+    else if (f.t === "list") input = `<textarea class="field" id="${id}" data-k="${f.k}" data-t="list" spellcheck="false">${esc((v || []).join("\n"))}</textarea>`;
+    else if (f.t === "text") input = `<input class="field" id="${id}" data-k="${f.k}" data-t="text" value="${esc(v ?? "")}" spellcheck="false">`;
+    else input = `<span class="row"><input class="field" type="number" min="0" step="${f.t === "int" ? 1 : "any"}" id="${id}" data-k="${f.k}" data-t="${f.t === "int" ? "int" : "num"}" value="${esc(v ?? "")}"><span class="unit">${esc(f.unit || "")}</span></span>`;
+    return `<div class="fld ${f.wide || f.t === "list" ? "wide" : ""}" data-fk="${f.k}">${f.t === "bool" ? "" : `<label class="lbl" for="${id}">${esc(f.label)}</label>`}${input}${f.help ? `<span class="how">${esc(f.help)}</span>` : ""}${f.k === "archive.root" ? `<span class="how" id="ar-prev">Resolves to: <code>${esc(SET.archive_root)}</code></span>` : ""}</div>`;
+  }
+  function readForm() {
+    const out = JSON.parse(JSON.stringify(CFG)); const bad = [];
+    $$("#cfg-form [data-k]").forEach(inp => {
+      const k = inp.dataset.k, t = inp.dataset.t; let v;
+      if (t === "bool") v = inp.checked;
+      else if (t === "select") v = JSON.parse(inp.value);
+      else if (t === "list") v = inp.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      else if (t === "text") v = inp.value.trim();
+      else { v = inp.value === "" ? NaN : Number(inp.value); if (!isFinite(v) || v < 0 || (t === "int" && !Number.isInteger(v))) bad.push(k); }
+      inp.closest(".fld").classList.toggle("bad", bad.includes(k));
+      setK(out, k, v);
+    });
+    return { cfg: out, bad };
+  }
+  function renderSettings() {
+    const el = $("#s-settings");
+    const vars = Object.entries(SET.variables).map(([k, v]) => `<div><code>{${esc(k)}}</code> = <span class="path">${esc(v)}</span></div>`).join("");
+    el.innerHTML = `<h2>Settings</h2>
+      <p class="muted">Everything PC TidyUp uses, editable here. Saved to <code>${esc(SET.config_path)}</code> and <code>${esc(SET.rules_path)}</code> (the previous version is kept as <code>.bak</code>). Scan settings and rules apply to the next scan.</p>
+      <div class="subnav">${CFG_GROUPS.map(g => `<button class="chip" data-jump="sg-${g.id}">${esc(g.title)}</button>`).join("")}<button class="chip" data-jump="sg-rules">Rules</button><button class="chip" data-jump="sg-test">Test a path</button></div>
+      <div class="savebar"><span class="msg" id="cfg-msg">No unsaved changes.</span>
+        <button class="btn" id="cfg-revert" disabled>Revert</button><button class="btn primary" id="cfg-save" disabled>Save settings</button></div>
+      <div id="cfg-form">${CFG_GROUPS.map(g => `<div class="panel" id="sg-${g.id}"><h3>${esc(g.title)}</h3>${g.help ? `<p class="how" style="margin-top:0">${esc(g.help)}</p>` : ""}
+        <div class="form">${g.fields.map(fieldHtml).join("")}</div>
+        ${g.id === "prot" ? `<details class="how" style="margin-top:10px"><summary>Variables you can use</summary>${vars}</details>` : ""}</div>`).join("")}</div>
+      <div class="panel" id="sg-rules"></div>
+      <div class="panel" id="sg-test"><h3>Test a path</h3><p class="how" style="margin-top:0">Which rules match a file or folder, whether it is protected, in OneDrive, and its category - using the saved settings and rules.</p>
+        <div class="row" style="display:flex;gap:8px"><input class="field" id="ex-path" placeholder="e.g. C:\\Users\\you\\Downloads\\setup.msi" spellcheck="false"><button class="btn" id="ex-go">Explain</button></div>
+        <pre class="explain" id="ex-out" hidden></pre></div>`;
+    $$("[data-jump]", el).forEach(b => b.onclick = () => $("#" + b.dataset.jump).scrollIntoView({ behavior: "smooth", block: "start" }));
+    const markDirty = () => {
+      settingsDirty = JSON.stringify(readForm().cfg) !== JSON.stringify(CFG);
+      $("#cfg-save").disabled = $("#cfg-revert").disabled = !settingsDirty;
+      $("#cfg-msg").className = "msg" + (settingsDirty ? " dirty" : "");
+      $("#cfg-msg").textContent = settingsDirty ? "Unsaved changes" : "No unsaved changes.";
+    };
+    $("#cfg-form").addEventListener("input", markDirty);
+    $("#cfg-form").addEventListener("change", markDirty);
+    $("#cfg-revert").onclick = () => { settingsDirty = false; renderSettings(); };
+    $("#cfg-save").onclick = async () => {
+      const { cfg, bad } = readForm();
+      if (bad.length) { $("#cfg-msg").className = "msg dirty"; $("#cfg-msg").textContent = "Please fix the highlighted fields (numbers of 0 or more)."; return; }
+      $("#cfg-save").disabled = true; $("#cfg-msg").textContent = "Saving…";
+      try {
+        const r = await api("/api/settings/config", { config: cfg });
+        SET.config = r.config; SET.archive_root = r.archive_root; CFG = JSON.parse(JSON.stringify(r.config)); settingsDirty = false;
+        if (APP) APP.archive_root = r.archive_root;
+        renderSettings();
+        $("#cfg-msg").className = "msg"; $("#cfg-msg").innerHTML = `<span class="ok-chip">✓ Saved</span> ${r.warnings?.length ? esc(r.warnings.join(" · ")) : "Takes effect at the next scan."}`;
+      } catch (e) {
+        $("#cfg-save").disabled = false; $("#cfg-msg").className = "msg"; $("#cfg-msg").innerHTML = `<span class="err-chip" style="max-width:none">${esc(e.message)}</span>`;
+      }
+    };
+    $("#ex-go").onclick = async () => {
+      const out = $("#ex-out"); out.hidden = false; out.textContent = "…";
+      try { out.textContent = (await api("/api/explain", { path: $("#ex-path").value })).text; } catch (e) { out.textContent = e.message; }
+    };
+    $("#ex-path").onkeydown = e => { if (e.key === "Enter") $("#ex-go").click(); };
+    renderRules();
+  }
+
+  // ------------------------------------------------------------------ rules manager
+  function ruleMatch(r, kind) {
+    if (kind === "dir_rules") return [].concat(r.path || []).join(", ");
+    return [...(r.exts || []), ...(r.names || [])].join(", ") + (r.path ? ` in ${[].concat(r.path).join(", ")}` : "");
+  }
+  function renderRules(msg) {
+    const box = $("#sg-rules"); if (!box) return;
+    const U = SET.user_rules; U.dir_rules = U.dir_rules || []; U.file_rules = U.file_rules || [];
+    const builtinIds = { dir_rules: new Set(SET.builtin.dir_rules.map(r => r.id)), file_rules: new Set(SET.builtin.file_rules.map(r => r.id)) };
+    const isSwitchOff = (r, kind) => r.disabled && builtinIds[kind].has(r.id) && !r.path && !r.exts && !r.names;
+    const mine = [], offs = [];
+    for (const kind of ["dir_rules", "file_rules"]) U[kind].forEach((r, i) => (isSwitchOff(r, kind) ? offs : mine).push({ r, kind, i }));
+    box.innerHTML = `<h3>Rules</h3><p class="how" style="margin-top:0">Rules decide what PC TidyUp recognises as cache, log, temp, installer… Your rules are checked first; a rule with the same id as a built-in one replaces it. Changes are saved immediately and apply at the next scan.</p>
+      ${msg || ""}
+      <div class="toolbar"><strong style="margin-right:auto">Your rules (${mine.length})</strong><button class="btn" data-add="dir_rules">+ Folder rule</button><button class="btn" data-add="file_rules">+ File rule</button></div>
+      <table><thead><tr><th>On</th><th>Type</th><th>Rule</th><th>Action</th><th>Matches</th><th>Min age</th><th></th></tr></thead><tbody>
+      ${mine.map(({ r, kind, i }) => `<tr class="${r.disabled ? "off-row" : ""}"><td><input type="checkbox" data-toggle="${kind}:${i}" ${r.disabled ? "" : "checked"} aria-label="enabled"></td>
+        <td>${kind === "dir_rules" ? "Folder" : "File"}</td><td><strong>${esc(r.label || r.id)}</strong><div class="how">${esc(r.id)}${builtinIds[kind].has(r.id) ? " · replaces the built-in rule" : ""}</div></td>
+        <td><span class="badge b-${esc(r.action || "review")}">${esc(ACT[r.action || "review"] || r.action)}</span></td>
+        <td class="path how">${esc(ruleMatch(r, kind))}</td><td class="num">${r.min_age_days ? esc(r.min_age_days) + " d" : "-"}</td>
+        <td style="white-space:nowrap"><button class="btn sm" data-edit="${kind}:${i}">Edit</button> <button class="btn sm" data-del="${kind}:${i}">Delete</button></td></tr>`).join("") || `<tr><td colspan="7" class="muted">No rules of your own yet.</td></tr>`}
+      </tbody></table>
+      ${offs.length ? `<p class="how">Built-in rules switched off: ${offs.map(({ r, kind, i }) => `<code>${esc(r.id)}</code> <button class="btn sm" data-del="${kind}:${i}">Switch on again</button>`).join(" ")}</p>` : ""}
+      <details style="margin-top:14px"><summary><strong>Built-in rules (${SET.builtin.dir_rules.length + SET.builtin.file_rules.length})</strong> <span class="how">- switch off or customize; the built-in file itself is never changed</span></summary>
+        <input type="search" class="field" id="bi-q" placeholder="Filter built-in rules…" style="margin:10px 0">
+        <div id="bi-t"></div></details>`;
+    const renderBuiltin = q => {
+      const rows = [];
+      for (const kind of ["dir_rules", "file_rules"]) SET.builtin[kind].forEach(r => {
+        if (q && !JSON.stringify(r).toLowerCase().includes(q)) return;
+        const ov = U[kind].find(x => x.id === r.id);
+        const status = !ov ? "active" : isSwitchOff(ov, kind) ? "switched off" : ov.disabled ? "replaced (your version is off)" : "replaced by your version";
+        rows.push(`<tr class="${ov ? "off-row" : ""}"><td>${kind === "dir_rules" ? "Folder" : "File"}</td><td><strong>${esc(r.label || r.id)}</strong><div class="how">${esc(r.id)}</div></td>
+          <td><span class="badge b-${esc(r.action)}">${esc(ACT[r.action] || r.action)}</span></td><td class="path how">${esc(ruleMatch(r, kind))}</td><td class="how">${esc(status)}</td>
+          <td style="white-space:nowrap">${ov ? "" : `<button class="btn sm" data-off="${kind}:${esc(r.id)}">Switch off</button> <button class="btn sm" data-custom="${kind}:${esc(r.id)}">Customize</button>`}</td></tr>`);
+      });
+      $("#bi-t").innerHTML = `<table><thead><tr><th>Type</th><th>Rule</th><th>Action</th><th>Matches</th><th>Status</th><th></th></tr></thead><tbody>${rows.join("") || `<tr><td colspan="6" class="muted">No match.</td></tr>`}</tbody></table>`;
+    };
+    renderBuiltin("");
+    $("#bi-q").oninput = e => renderBuiltin(e.target.value.toLowerCase());
+    const ref = s => { const [kind, i] = s.split(":"); return { kind, i: +i }; };
+    box.onclick = async e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.add) return openRuleEditor(b.dataset.add, null);
+      if (b.dataset.edit) { const { kind, i } = ref(b.dataset.edit); return openRuleEditor(kind, i); }
+      if (b.dataset.del) {
+        const { kind, i } = ref(b.dataset.del); const r = U[kind][i];
+        if (!isSwitchOff(r, kind) && !confirm(`Delete your rule '${r.label || r.id}'?`)) return;
+        const next = JSON.parse(JSON.stringify(U)); next[kind].splice(i, 1); return saveRules(next);
+      }
+      if (b.dataset.off || b.dataset.custom) {
+        const [kind, id] = (b.dataset.off || b.dataset.custom).split(":");
+        const next = JSON.parse(JSON.stringify(U));
+        if (b.dataset.off) { next[kind].push({ id, disabled: true }); return saveRules(next); }
+        const copy = JSON.parse(JSON.stringify(SET.builtin[kind].find(r => r.id === id)));
+        return openRuleEditor(kind, null, copy);
+      }
+    };
+    box.onchange = e => {
+      const t = e.target.dataset.toggle; if (!t) return;
+      const { kind, i } = ref(t); const next = JSON.parse(JSON.stringify(U));
+      if (e.target.checked) delete next[kind][i].disabled; else next[kind][i].disabled = true;
+      saveRules(next);
+    };
+  }
+  async function saveRules(next, dlgErr) {
+    try {
+      await api("/api/settings/rules", { user_rules: next });
+      SET.user_rules = next;
+      renderRules(`<div class="note good"><span class="ico">✓</span><span>Rules saved. They apply at the next scan. <button class="btn sm" id="rules-scan">Run new scan</button></span></div>`);
+      $("#rules-scan")?.addEventListener("click", openScanDialog);
+      return true;
+    } catch (e) {
+      if (dlgErr) { dlgErr.hidden = false; dlgErr.textContent = e.message; return false; }
+      renderRules(`<div class="note crit"><span class="ico">!</span><span>${esc(e.message)}</span></div>`);
+      return false;
+    }
+  }
+  function openRuleEditor(kind, index, preset) {
+    const U = SET.user_rules;
+    const isNew = index === null;
+    const r = preset || (isNew ? { id: "", label: "", action: "likely" } : JSON.parse(JSON.stringify(U[kind][index])));
+    const dir = kind === "dir_rules";
+    const lines = v => [].concat(v || []).join("\n");
+    const opt = (v, o) => `<option value="${esc(v)}" ${v === o ? "selected" : ""}>`;
+    const dlg = $("#dlg");
+    dlg.innerHTML = `<form method="dialog"><div class="dlg-h"><h2>${isNew ? (preset ? "Customize built-in rule" : `New ${dir ? "folder" : "file"} rule`) : "Edit rule"}</h2>
+      <p class="how" style="margin:0">${dir ? "A folder rule recognises folders (caches, logs, build output…) and shows each as one item, or each entry inside it." : "A file rule recognises individual files by extension or name, e.g. old logs or installers."}</p></div>
+      <div class="dlg-b"><div class="form">
+        <div class="fld"><label class="lbl">Name</label><input class="field" id="re-label" value="${esc(r.label || "")}" placeholder="e.g. Old build output"></div>
+        <div class="fld"><label class="lbl">Id</label><input class="field" id="re-id" value="${esc(r.id || "")}" ${preset ? "readonly" : ""} placeholder="filled from the name"><span class="how">${preset ? "Same id as the built-in rule, so yours replaces it." : "Unique; letters, digits and dashes."}</span></div>
+        <div class="fld wide"><label class="lbl">Recommendation</label><select class="field" id="re-action">${ACT_OPTS().map(([v, l]) => `${opt(v, r.action || "review")}${esc(l)}</option>`).join("")}</select></div>
+        ${dir ? `
+        <div class="fld wide"><label class="lbl">Folder path(s)</label><textarea class="field" id="re-path" spellcheck="false" placeholder="{localappdata}/myapp/cache&#10;**/node_modules">${esc(lines(r.path))}</textarea><span class="how">One per line. * = inside one folder, ** = any depth, {a,b} = alternatives, variables like {home}, {localappdata}, {temp}.</span></div>
+        <div class="fld"><label class="lbl">Show as</label><select class="field" id="re-mode">${opt("whole", r.mode || "whole")}One item - the whole folder</option>${opt("children", r.mode || "whole")}Each entry inside, if old enough</option></select></div>
+        <div class="fld"><label class="lbl">Only if unchanged for</label><span class="row"><input class="field" type="number" min="0" id="re-age" value="${esc(r.min_age_days ?? 0)}"><span class="unit">days</span></span></div>
+        <div class="fld wide"><label class="lbl">Except (optional)</label><textarea class="field" id="re-exclude" spellcheck="false" style="min-height:50px">${esc(lines(r.exclude))}</textarea></div>` : `
+        <div class="fld"><label class="lbl">Extensions</label><input class="field" id="re-exts" value="${esc((r.exts || []).join(", "))}" placeholder=".log, .tmp" spellcheck="false"></div>
+        <div class="fld"><label class="lbl">or file names</label><input class="field" id="re-names" value="${esc((r.names || []).join(", "))}" placeholder="~$*, *.log.1" spellcheck="false"></div>
+        <div class="fld wide"><label class="lbl">Only in (optional)</label><textarea class="field" id="re-path" spellcheck="false" style="min-height:50px" placeholder="{home}/download*/**">${esc(lines(r.path))}</textarea></div>
+        <div class="fld"><label class="lbl">Only if unused for</label><span class="row"><input class="field" type="number" min="0" id="re-age" value="${esc(r.min_age_days ?? 0)}"><span class="unit">days</span></span></div>
+        <div class="fld"><label class="lbl">Age is measured by</label><select class="field" id="re-basis">${opt("used", r.age_basis || "used")}Last use (access or change)</option>${opt("modified", r.age_basis || "used")}Last change only</option></select></div>
+        <div class="fld"><label class="lbl">Only files from</label><span class="row"><input class="field" type="number" min="0" id="re-size" value="${esc(r.min_size_kb ?? 0)}"><span class="unit">KB</span></span></div>`}
+        <div class="fld wide"><label class="lbl">Why (shown in the report)</label><input class="field" id="re-reason" value="${esc(r.reason || "")}"></div>
+        <div class="fld wide"><label class="lbl">How to handle it (shown in the report)</label><input class="field" id="re-how" value="${esc(r.how || "")}"></div>
+      </div>
+      <details style="margin-top:8px"><summary class="how">Advanced</summary><div class="form" style="margin-top:8px">
+        ${dir ? `<div class="fld wide"><label class="lbl">PowerShell command instead of deleting (optional)</label><input class="field" id="re-ps" value="${esc(r.ps || "")}" placeholder="e.g. npm cache clean --force" spellcheck="false"></div>` :
+                `<label class="row"><input type="checkbox" id="re-inside" ${r.inside_rule_folders ? "checked" : ""}> <span>Also inside folders matched by a folder rule</span></label>`}
+        <label class="row"><input type="checkbox" id="re-system" ${r.system ? "checked" : ""}> <span>May match inside protected system folders</span></label>
+      </div></details>
+      <p class="err-chip" id="re-err" hidden style="max-width:none;margin-top:10px"></p></div>
+      <div class="dlg-f"><button class="btn" value="cancel">Cancel</button><button class="btn primary" id="re-save">${isNew ? "Add rule" : "Save rule"}</button></div></form>`;
+    dlg.showModal();
+    const lbl = $("#re-label"), idf = $("#re-id");
+    let idTouched = !!r.id;
+    idf.oninput = () => { idTouched = true; };
+    lbl.oninput = () => { if (!idTouched) idf.value = "my-" + slug(lbl.value); };
+    $("#re-save").onclick = async e => {
+      e.preventDefault();
+      const err = $("#re-err"); err.hidden = true;
+      const val = id => $(id)?.value.trim() ?? "";
+      const list = (id, sep) => val(id).split(sep).map(x => x.trim()).filter(Boolean);
+      const out = { ...r, id: val("#re-id"), label: val("#re-label"), action: val("#re-action"), reason: val("#re-reason"), how: val("#re-how") };
+      const age = Number(val("#re-age") || 0);
+      if (!out.label) { err.hidden = false; err.textContent = "Give the rule a name."; return; }
+      if (!out.id) out.id = "my-" + slug(out.label);
+      if (!isFinite(age) || age < 0) { err.hidden = false; err.textContent = "The age must be 0 or more days."; return; }
+      if (age) out.min_age_days = age; else delete out.min_age_days;
+      if (dir) {
+        out.path = list("#re-path", /\r?\n/); if (out.path.length === 1) out.path = out.path[0];
+        if (!out.path.length) { err.hidden = false; err.textContent = "Enter at least one folder path."; return; }
+        out.mode = val("#re-mode"); if (out.mode === "whole") delete out.mode;
+        const ex = list("#re-exclude", /\r?\n/); if (ex.length) out.exclude = ex; else delete out.exclude;
+        const ps = val("#re-ps"); if (ps) out.ps = ps; else delete out.ps;
+      } else {
+        out.exts = list("#re-exts", ",").map(x => x.startsWith(".") ? x.toLowerCase() : "." + x.toLowerCase());
+        out.names = list("#re-names", ",");
+        if (!out.exts.length) delete out.exts; if (!out.names.length) delete out.names;
+        if (!out.exts && !out.names) { err.hidden = false; err.textContent = "Enter extensions and/or file names."; return; }
+        const p = list("#re-path", /\r?\n/); if (p.length) out.path = p.length === 1 ? p[0] : p; else delete out.path;
+        out.age_basis = val("#re-basis"); if (out.age_basis === "used") delete out.age_basis;
+        const kb = Number(val("#re-size") || 0); if (kb > 0) out.min_size_kb = kb; else delete out.min_size_kb;
+        if ($("#re-inside").checked) out.inside_rule_folders = true; else delete out.inside_rule_folders;
+      }
+      if ($("#re-system").checked) out.system = true; else delete out.system;
+      const next = JSON.parse(JSON.stringify(U));
+      next[kind] = next[kind] || [];
+      if (isNew) next[kind].unshift(out); else next[kind][index] = out;
+      if (await saveRules(next, err)) dlg.close();
+    };
+  }
+
+  // ------------------------------------------------------------------ archive manifest
+  async function loadManifest() {
+    const el = $("#ar-m"); if (!el) return;
+    try {
+      const j = await api("/api/archive");
+      if (!j.entries.length) { el.innerHTML = `<span class="muted">Nothing archived yet. Archive root: <code>${esc(j.root)}</code></span>`; return; }
+      const max = Math.max(1, ...j.entries.map(e => e.bytes || 0));
+      table(el, [
+        { t: "Original location", val: e => e.original, html: e => pathCell(e.original) + (e.link ? `<div class="how">↪ ${esc(e.link)} left here</div>` : "") },
+        { t: "In OneDrive", val: e => e.archived, html: e => `<span class="path how">${esc(e.archived)}</span>${copyBtn(e.archived)}${revealBtn(e.archived)}` },
+        sizeCol("Size", e => e.bytes || 0, max),
+        { t: "Archived", val: e => e.ts },
+        { t: "State", val: e => e.status, html: e => `<span class="${e.status === "online-only" ? "ok-chip" : e.status === "missing" ? "err-chip" : "how"}">${esc(e.status)}${e.status === "uploading / pending" ? ` (${e.cloud_pct}% done)` : ""}</span>` },
+        { t: "", val: () => 0, html: e => e.restored || e.status === "missing" ? "" : `<button class="btn sm" data-run="restore" data-keys="${esc(reg("m:" + e.id, e.original.split("\\").pop(), e.original, e.bytes, ["restore"]))}">Restore…</button>` }
+      ], j.entries, { sort: 3, limit: 100 });
+    } catch (e) { el.innerHTML = `<span class="muted">Could not load: ${esc(e.message)}</span>`; }
+  }
+})();
+</script>
+</body>
+</html>

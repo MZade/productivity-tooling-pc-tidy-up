@@ -1,0 +1,28 @@
+1
+00:00:00,350 --> 00:00:02,698
+Is your C drive full... again?
+
+2
+00:00:03,400 --> 00:00:07,967
+Meet PC TidyUp. A free tool that finds what is eating your disk.
+
+3
+00:00:08,450 --> 00:00:13,785
+One scan finds caches, logs, temp files, old installers and duplicates.
+
+4
+00:00:14,700 --> 00:00:17,923
+Everything is ranked, so you know exactly where to start.
+
+5
+00:00:19,350 --> 00:00:22,914
+Clean up straight from the report, and watch the space come back.
+
+6
+00:00:26,200 --> 00:00:31,087
+Archive to OneDrive, compress, or add your own rules. All from one page.
+
+7
+00:00:33,050 --> 00:00:38,449
+It runs locally on your PC, and it's free for personal use. Link in the comments.
+

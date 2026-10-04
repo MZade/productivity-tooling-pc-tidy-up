@@ -1,0 +1,21 @@
+# --- Personal data: never publish ---------------------------------------------
+# Scan results, logs, action history, archive manifest (file paths, PC name)
+reports/
+# Your own rules (may contain personal paths) - the repo ships tidyup.rules.user.example.json
+tidyup.rules.user.json
+# Backups written by the Settings page
+*.bak
+*.tmp
+
+# Working material that is not part of the tool
+docs/TidyUp-Presentation.pptx
+docs/promo/LinkedIn-post.md
+docs/promo/voice-samples/
+
+# --- Build / editor -----------------------------------------------------------
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

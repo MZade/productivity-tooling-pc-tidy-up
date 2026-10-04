@@ -1,0 +1,90 @@
+{
+  "_license": "PC TidyUp (c) 2026 Mehrdad Ghazvinizadeh - PolyForm Noncommercial License 1.0.0 (see LICENSE.md). Commercial use requires written permission.",
+  "_help":"PC TidyUp settings. Rules (what counts as cache/log/temp/...) live in tidyup.rules.json. Globs use the same syntax and variables as the rules.",
+
+  "roots": ["C:\\"],
+  "report_dir": "reports",
+  "keep_reports": 10,
+  "duplicates": true,
+  "use_last_access_time": "auto",
+
+  "thresholds": {
+    "large_file_top_n": 100,
+    "max_rows": 500,
+    "min_candidate_mb": 1,
+    "compress_min_mb": 20,
+    "compress_min_age_days": 90,
+    "offload_min_mb": 20,
+    "offload_min_age_days": 180,
+    "archive_min_mb": 100,
+    "archive_min_age_days": 365,
+    "duplicate_min_mb": 10,
+    "duplicate_full_hash_max_mb": 512,
+    "duplicate_time_budget_s": 300,
+    "tree_min_mb": 250,
+    "tree_max_depth": 8
+  },
+
+  "_archive": "Archive to OneDrive: items are moved under one common root, mirroring their original path (C:/x/y -> <root>/C/x/y), then made online-only once uploaded. leave_link = default of the 'leave a link' option.",
+  "archive": {
+    "root": "{onedrive}/TidyUp Archive",
+    "make_online_only": true,
+    "leave_link": false,
+    "shortcut_fallback": true,
+    "max_folder_files": 20000
+  },
+
+  "_priority": "Thresholds for the priority guide (P1 do now, P2 quick check, P3 decide, P4 optional) and the disk health verdict.",
+  "priority": {
+    "safe_p1_mb": 500, "safe_p2_mb": 50, "likely_p2_mb": 100, "review_p3_mb": 1024, "info_p3_mb": 5120,
+    "offload_p1_mb": 500, "compress_p2_mb": 200, "archive_p3_mb": 1024, "duplicates_p3_mb": 500,
+    "critical_free_pct": 10, "critical_free_gb": 15, "warning_free_pct": 20
+  },
+
+  "_app": "Local web app (PC-TidyUp.cmd): port 0 = pick a free one; stops by itself when no page is open for idle_shutdown_minutes.",
+  "app": { "port": 8765, "idle_shutdown_minutes": 20 },
+
+  "_protected": "No file-level advice (compress/archive/delete) inside these; only dir_rules marked system:true may match here.",
+  "protected": [
+    "{windir}/**",
+    "{programfiles}/**",
+    "{programfilesx86}/**",
+    "{programdata}/**",
+    "{systemdrive}/system volume information/**",
+    "{systemdrive}/recovery/**",
+    "{systemdrive}/$recycle.bin/**",
+    "{localappdata}/microsoft/windowsapps/**",
+    "{localappdata}/programs/**",
+    "**/.git/**",
+    "{home}/.ssh/**",
+    "{home}/.aws/**",
+    "{home}/.azure/**",
+    "{home}/.kube/**",
+    "{home}/.docker/**"
+  ],
+
+  "_advice_exclude": "App-internal data: no compress/archive/offload/duplicate advice here (folder and file rules still apply).",
+  "advice_exclude": [
+    "{home}/appdata/**",
+    "{home}/.*/**",
+    "{home}/scoop/**",
+    "**/node_modules/**"
+  ],
+
+  "_duplicates_exclude": "Duplicates inside these are by design (installed packages, app data) and are not reported.",
+  "duplicates_exclude": [
+    "{home}/appdata/**",
+    "{home}/.*/**",
+    "{home}/scoop/**",
+    "**/node_modules/**",
+    "**/site-packages/**",
+    "**/packages/**",
+    "**/.nuget/**"
+  ],
+
+  "_skip": "Folders not scanned at all (their size is not counted).",
+  "skip": [],
+
+  "_cloud_sync_roots": "Extra synced folders (SharePoint libraries etc.). OneDrive is detected automatically from file attributes and the OneDrive environment variables.",
+  "cloud_sync_roots": []
+}

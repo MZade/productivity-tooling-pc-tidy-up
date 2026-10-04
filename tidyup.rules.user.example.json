@@ -1,0 +1,58 @@
+{
+  "_help": [
+    "YOUR OWN RULES. They are checked before the built-in rules in tidyup.rules.json, which you never need to edit.",
+    "Same id as a built-in rule = replaces it. \"disabled\": true = switched off (the examples below are off until you remove that line).",
+    "After editing: python tidyup.py --check-rules   (validates)   and   python tidyup.py --explain \"C:\\some\\path\"   (shows which rule matches).",
+    "Paths are globs with '/' separators: * = inside one folder, ** = any depth, {a,b} = alternatives. Case does not matter.",
+    "Variables: {home} {localappdata} {appdata} {temp} {programdata} {windir} {systemdrive} {programfiles} {programfilesx86} {downloads} {onedrive}.",
+    "action: safe | likely | review | info.  dir_rules mode: whole (folder as one item) | children (each entry inside, filtered by min_age_days).",
+    "file_rules: match by exts and/or names (file-name globs), optional path glob, min_age_days, min_size_kb, age_basis used|modified.",
+    "Optional on folder rules: exclude (globs), ps (PowerShell command used instead of deleting), system: true (may match inside C:\\Windows etc.)."
+  ],
+
+  "dir_rules": [
+    {
+      "id": "my-old-repos-build-output",
+      "disabled": true,
+      "label": "Build output in C:\\git projects",
+      "action": "likely",
+      "min_age_days": 30,
+      "path": "{systemdrive}/git/**/{bin,obj}",
+      "reason": "Recreated by the next build.",
+      "how": "Delete, or 'git clean -xdf' in the repo."
+    },
+    {
+      "id": "my-teams-recordings",
+      "disabled": true,
+      "label": "Old Teams meeting recordings",
+      "action": "review",
+      "mode": "children",
+      "min_age_days": 90,
+      "path": "{home}/videos/recordings",
+      "reason": "Recordings are also stored in OneDrive/Stream.",
+      "how": "Delete the local copies you no longer need."
+    }
+  ],
+
+  "file_rules": [
+    {
+      "id": "my-old-d365-deployable-packages",
+      "disabled": true,
+      "label": "Old D365 deployable packages",
+      "action": "review",
+      "min_age_days": 60,
+      "min_size_kb": 10240,
+      "names": ["AXDeployableRuntime*.zip", "*DeployablePackage*.zip"],
+      "reason": "Downloaded deployable packages are kept in LCS / Azure DevOps artifacts.",
+      "how": "Delete local copies of packages that are already deployed."
+    }
+  ],
+
+  "categories": {
+    "_note": "Optional: add or move file extensions to a category, e.g. \"D365 packages\": [\".axpp\"]"
+  },
+
+  "compression_ratios": {
+    "_note": "Optional: estimated saving (0-1) for extra compressible extensions, e.g. \".trx\": 0.8"
+  }
+}
