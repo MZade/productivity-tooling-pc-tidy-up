@@ -85,7 +85,7 @@ def under(path: str, root: str) -> bool:
 
 def is_link(path: str) -> bool:
     try:
-        return os.path.islink(lp(path)) or os.path.isjunction(lp(path))
+        return os.path.islink(lp(path)) or T.path_is_junction(lp(path))
     except OSError:
         return False
 
@@ -112,7 +112,7 @@ def walk_files(path: str, job=None):
                 raise Cancelled()
             full = T.join(d, e.name)
             try:
-                if e.is_symlink() or e.is_junction():
+                if e.is_symlink() or T.entry_is_junction(e, lp(full)):
                     continue
                 if e.is_dir(follow_symlinks=False):
                     stack.append(full)
@@ -152,7 +152,7 @@ def remove_file(path: str) -> None:
 
 
 def remove_link(path: str) -> None:
-    if os.path.isjunction(lp(path)) or os.path.isdir(lp(path)):
+    if T.path_is_junction(lp(path)) or os.path.isdir(lp(path)):
         os.rmdir(lp(path))       # removes a junction / directory symlink, never its target
     else:
         os.unlink(lp(path))
@@ -183,7 +183,7 @@ def delete_tree(path: str, job, keep_root: bool = False) -> tuple[int, int]:
                 raise Cancelled()
             full = T.join(d, e.name)
             try:
-                if e.is_symlink() or e.is_junction():
+                if e.is_symlink() or T.entry_is_junction(e, lp(full)):
                     remove_link(full)
                 elif e.is_dir(follow_symlinks=False):
                     rec(full)

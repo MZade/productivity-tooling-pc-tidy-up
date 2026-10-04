@@ -33,7 +33,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 HERE = Path(__file__).resolve().parent
 DAY = 86400.0
 MB = 1024 * 1024
@@ -51,6 +51,31 @@ A_RECALL_ON_DATA_ACCESS = 0x400000
 CLOUD_ONLY = A_OFFLINE | A_RECALL_ON_OPEN | A_RECALL_ON_DATA_ACCESS
 
 ACTIONS = ["safe", "likely", "review", "info"]
+IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003
+
+
+def path_is_junction(path: str) -> bool:
+    """os.path.isjunction for every Python version (the built-in exists from 3.12 only)."""
+    if hasattr(os.path, "isjunction"):
+        return os.path.isjunction(path)
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return False
+    return bool(getattr(st, "st_file_attributes", 0) & A_REPARSE) and \
+        getattr(st, "st_reparse_tag", 0) == IO_REPARSE_TAG_MOUNT_POINT
+
+
+def entry_is_junction(entry, full_path: str) -> bool:
+    """DirEntry.is_junction for every Python version."""
+    if hasattr(entry, "is_junction"):
+        return entry.is_junction()
+    try:
+        if not entry.stat(follow_symlinks=False).st_file_attributes & A_REPARSE:
+            return False                     # cheap: no reparse point at all
+    except OSError:
+        return False
+    return path_is_junction(full_path)
 
 
 class ScanCancelled(Exception):
@@ -522,7 +547,7 @@ class Scanner:
                     for e in it:
                         try:
                             if e.is_dir(follow_symlinks=False):
-                                if e.is_symlink() or e.is_junction():
+                                if e.is_symlink() or entry_is_junction(e, longpath(join(path, e.name))):
                                     self.stats["links"] += 1
                                     continue
                                 child = join(path, e.name)

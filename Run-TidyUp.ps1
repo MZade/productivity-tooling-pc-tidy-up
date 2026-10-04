@@ -30,13 +30,17 @@ function Find-Python {
     $candidates = @()
     $py = Get-Command py.exe -ErrorAction SilentlyContinue
     if ($py) { $candidates += , @($py.Source, '-3') }
+    $store = @()
     foreach ($name in 'python.exe', 'python3.exe') {
-        Get-Command $name -All -ErrorAction SilentlyContinue |
-            Where-Object { $_.Source -notmatch '\\WindowsApps\\' } |   # skip the Microsoft Store stub
-            ForEach-Object { $candidates += , @($_.Source) }
+        Get-Command $name -All -ErrorAction SilentlyContinue | ForEach-Object {
+            # WindowsApps holds both Microsoft Store Python and the "install Python" stub: try those last;
+            # the version test below rejects the stub
+            if ($_.Source -match '\\WindowsApps\\') { $store += , @($_.Source) } else { $candidates += , @($_.Source) }
+        }
     }
     Get-ChildItem "$env:ProgramFiles\Python3*\python.exe", "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe" -ErrorAction SilentlyContinue |
         Sort-Object FullName -Descending | ForEach-Object { $candidates += , @($_.FullName) }
+    $candidates += $store
     foreach ($c in $candidates) {
         $exe = $c[0]; $pre = @($c | Select-Object -Skip 1)
         try {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 (2026-10)
+
+- Fix: runs on Python 3.9-3.11 as documented (junction detection used a Python 3.12-only function); tested on 3.9, 3.12 and 3.14
+- Fix: Python installed from the Microsoft Store is now found by the launcher
+- Docs: step-by-step [getting started](docs/getting-started.md) and [troubleshooting & FAQ](docs/troubleshooting.md)
+
 ## 1.0.0 (2026-10)
 
 First public release.

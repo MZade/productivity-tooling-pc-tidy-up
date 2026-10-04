@@ -32,11 +32,15 @@ PC TidyUp scans your drive, recognises caches, logs, temp files, old installers,
 
 ## Quick start
 
+New to this? Follow the **[step-by-step getting-started guide](docs/getting-started.md)**.
+
 1. Install **Python 3.9 or newer** (`winget install Python.Python.3.12`). Nothing else is needed; PC TidyUp uses only the standard library.
-2. Download or clone this repository:
-   ```powershell
-   git clone https://github.com/MZade/productivity-tooling-pc-tidy-up.git
-   ```
+2. Get PC TidyUp in one of two ways:
+   - Click **Code → Download ZIP**, then right-click the ZIP → *Properties* → **Unblock**, and extract it.
+   - Or clone it:
+     ```powershell
+     git clone https://github.com/MZade/productivity-tooling-pc-tidy-up.git
+     ```
 3. Double-click **`PC-TidyUp.cmd`**. The report opens in your browser at `http://127.0.0.1:8765`.
 4. Click **Run the first scan**. A full drive takes a few minutes.
 5. Start with **P1 Do now**, then work down the priorities.
@@ -66,6 +70,8 @@ More in [How it works](docs/how-it-works.md).
 
 | | |
 |---|---|
+| [Getting started](docs/getting-started.md) | Step by step: install Python, download, first run, update, uninstall |
+| [Troubleshooting & FAQ](docs/troubleshooting.md) | Common messages and questions, with what to do |
 | [User guide](docs/user-guide.md) | Every tab and action, settings, headless use, scheduling, the cleanup script |
 | [Rules](docs/rules.md) | How rules work, all fields and variables, examples, `--check-rules` and `--explain` |
 | [How it works](docs/how-it-works.md) | Scanning, priorities, OneDrive handling, the local app and its security model, files written |
