@@ -85,7 +85,7 @@ More in [How it works](docs/how-it-works.md).
 | [Rules](docs/rules.md) | How rules work, all fields and variables, examples, `--check-rules` and `--explain` |
 | [How it works](docs/how-it-works.md) | Scanning, priorities, OneDrive handling, the local app and its security model, files written |
 | [Disclaimer](DISCLAIMER.md) | Use at your own risk: no warranty, limitation of liability, your responsibilities |
-| [Changelog](CHANGELOG.md) · [Security](SECURITY.md) | Release notes · how to report a vulnerability |
+| [Changelog](CHANGELOG.md) · [Security](../SECURITY.md) | Release notes · how to report a vulnerability |
 
 ## Requirements
 
