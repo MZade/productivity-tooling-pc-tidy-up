@@ -32,7 +32,15 @@ PC TidyUp scans your drive, recognises caches, logs, temp files, old installers,
 
 ## Quick start
 
-New to this? Follow the **[step-by-step getting-started guide](docs/getting-started.md)**.
+**Easiest: one command.** Open PowerShell and run:
+
+```powershell
+irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1 | iex
+```
+
+It checks for Python and offers to install it, installs PC TidyUp for your user only (no admin needed), adds **PC TidyUp** to the Start menu and the desktop, and starts it. Run the same command again to update; your reports, rules and settings are kept. See [Getting started](docs/getting-started.md) for options, updating and uninstalling.
+
+**Or manually.** New to this? Follow the **[step-by-step getting-started guide](docs/getting-started.md)**.
 
 1. Install **Python 3.9 or newer** (`winget install Python.Python.3.12`). Nothing else is needed; PC TidyUp uses only the standard library.
 2. Get PC TidyUp in one of two ways:

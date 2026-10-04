@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 (2026-10)
+
+- One-command installer `install.ps1` (`irm … | iex`): checks for or installs Python, installs per user without admin, unblocks the files, adds Start menu and desktop shortcuts with the PC TidyUp icon, optional weekly scan; updates keep reports, rules and settings; `-Uninstall`
+- New app icon (`assets/`)
+
 ## 1.0.1 (2026-10)
 
 - Fix: runs on Python 3.9-3.11 as documented (junction detection used a Python 3.12-only function); tested on 3.9, 3.12 and 3.14

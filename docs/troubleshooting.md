@@ -1,5 +1,13 @@
 # PC TidyUp: troubleshooting and FAQ
 
+## Installing
+
+**`irm … | iex` is blocked or shows a security error**
+Some company PCs block running scripts from the internet. Download [`install.ps1`](../install.ps1), read it, and run `powershell -ExecutionPolicy Bypass -File .\install.ps1`. Or follow the manual installation in [Getting started](getting-started.md#1-install-python-once).
+
+**Where is it installed, and where are the shortcuts?**
+The program is in `%LOCALAPPDATA%\Programs\PC-TidyUp`. The shortcuts are *PC TidyUp* in the Start menu and on the desktop. Running the installer again recreates missing shortcuts.
+
 ## Starting
 
 **"Python 3.9+ was not found"**

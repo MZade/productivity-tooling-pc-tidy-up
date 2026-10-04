@@ -33,7 +33,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 HERE = Path(__file__).resolve().parent
 DAY = 86400.0
 MB = 1024 * 1024

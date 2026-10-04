@@ -4,6 +4,39 @@ A step-by-step guide for first-time users. It takes about 10 minutes, plus a few
 
 > ⚠️ PC TidyUp can delete, move and change files. You use it entirely at your own risk; read the [Disclaimer](../DISCLAIMER.md) and **make a backup** of important data first.
 
+## Quick install (recommended)
+
+Open **PowerShell** (Start menu → type *PowerShell*) and run:
+
+```powershell
+irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1 | iex
+```
+
+The installer:
+
+1. checks for Python 3.9+. If it's missing, it offers to install Python 3.12 with winget, for your user only.
+2. downloads PC TidyUp and installs it to `%LOCALAPPDATA%\Programs\PC-TidyUp`. That's outside OneDrive, and no administrator rights are needed.
+3. unblocks the files, so Windows doesn't warn about each one.
+4. adds **PC TidyUp** to the **Start menu** and the **desktop**.
+5. starts PC TidyUp. Continue with [4. First run](#4-first-run).
+
+**Options:**
+
+```powershell
+$installer = [scriptblock]::Create((irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1))
+& $installer -Schedule              # also schedule a weekly scan (Mondays 12:30)
+& $installer -NoDesktopShortcut     # Start menu entry only
+& $installer -InstallDir D:\Tools\PC-TidyUp
+& $installer -Uninstall             # remove program, shortcuts and scheduled task
+& $installer -Uninstall -KeepData   # ... but keep reports, your rules and settings
+```
+
+**Update:** run the one-line install command again. Your reports, your rules and your settings are kept; the new default settings are saved next to yours as `tidyup.config.default.json`.
+
+Prefer to read a script before you run it? Download [`install.ps1`](../install.ps1), inspect it, and run `powershell -ExecutionPolicy Bypass -File .\install.ps1`.
+
+The rest of this guide describes the **manual** installation.
+
 ## 1. Install Python (once)
 
 PC TidyUp needs **Python 3.9 or newer**. It uses nothing else; no packages to install.
@@ -69,6 +102,8 @@ Tip: to include system folders such as `C:\Windows\Temp`, click **Restart as adm
 
 ## Updating
 
+If you used the **quick install**, just run the install command again. For a manual installation:
+
 1. Click **Stop PC TidyUp** on the page.
 2. Download the new version (step 2) and extract it **over** your existing folder, or run `git pull` if you used git.
 
@@ -77,6 +112,8 @@ Your **reports** (`reports\`) and **your own rules** (`tidyup.rules.user.json`) 
 If you changed **Settings**, `tidyup.config.json` is replaced by the new default. Copy it somewhere safe before updating and put it back afterwards. The previous version is also kept as `tidyup.config.json.bak` whenever you save settings.
 
 ## Uninstalling
+
+If you used the **quick install**, run `install.ps1 -Uninstall` from the install folder (`%LOCALAPPDATA%\Programs\PC-TidyUp`), or use the `-Uninstall` option shown above. It removes the program, the shortcuts and the scheduled task. For a manual installation:
 
 1. Click **Stop PC TidyUp**.
 2. If you scheduled the weekly scan, run `.\Register-TidyUpTask.ps1 -Unregister`.
