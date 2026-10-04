@@ -1,8 +1,8 @@
 Required Notice: Copyright (c) 2026 Mehrdad Ghazvinizadeh. All rights not expressly granted below are reserved.
 
-Required Notice: This repository (productivity-tools) and every tool in it, including PC TidyUp, are licensed for noncommercial purposes only, under the PolyForm Noncommercial License 1.0.0 below. Any commercial use of any tool in this repository or of any part of it - including setting up, running or supporting a business, product or service that is based on or contains these tools or parts of them - requires prior written permission from Mehrdad Ghazvinizadeh.
+Required Notice: PC TidyUp is licensed for noncommercial purposes only, under the PolyForm Noncommercial License 1.0.0 below. Any commercial use of PC TidyUp or of any part of it - including setting up, running or supporting a business, product or service that is based on or contains PC TidyUp or parts of it - requires prior written permission from Mehrdad Ghazvinizadeh.
 
-Required Notice: The tools in this repository are provided "as is", without any warranty, and are used entirely at the user's own risk and responsibility. To the maximum extent permitted by applicable law, Mehrdad Ghazvinizadeh (creator, licensor and publisher) and any contributors or distributors are not liable for any damage, harm, data loss, data corruption, disruption or other loss of any kind caused by or related to these tools, however caused. See DISCLAIMER.md, which is part of these notices.
+Required Notice: PC TidyUp is provided "as is", without any warranty, and is used entirely at the user's own risk and responsibility. To the maximum extent permitted by applicable law, Mehrdad Ghazvinizadeh (creator, licensor and publisher) and any contributors or distributors are not liable for any damage, harm, data loss, data corruption, disruption or other loss of any kind caused by or related to PC TidyUp, however caused. See DISCLAIMER.md, which is part of these notices.
 
 ---
 

@@ -12,10 +12,10 @@
   5. Optionally schedules a weekly scan, then starts PC TidyUp.
 
   One-line install (PowerShell):
-    irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/MZade/productivity-tools/main/pc-tidy-up/install.ps1 | iex
 
   With options:
-    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1))) -Schedule -NoDesktopShortcut
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/MZade/productivity-tools/main/pc-tidy-up/install.ps1))) -Schedule -NoDesktopShortcut
 
   From a downloaded copy:
     powershell -ExecutionPolicy Bypass -File .\install.ps1 [-Uninstall]
@@ -42,7 +42,8 @@ $ProgressPreference = 'SilentlyContinue'                # much faster downloads 
 
 if ($env:PCTIDYUP_NO_LAUNCH) { $NoLaunch = $true }       # for unattended setups / tests
 if ($env:PCTIDYUP_YES) { $Yes = $true }
-$Repo = 'MZade/productivity-tooling-pc-tidy-up'
+$Repo = 'MZade/productivity-tools'
+$ToolFolder = 'pc-tidy-up'
 $AppName = 'PC TidyUp'
 $TaskName = 'PC TidyUp weekly storage review'
 if (-not $InstallDir) { $InstallDir = if ($env:PCTIDYUP_INSTALL_DIR) { $env:PCTIDYUP_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\PC-TidyUp' } }
@@ -178,7 +179,9 @@ try {
         $zip = Join-Path $tmp 'pc-tidyup.zip'
         Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/$Repo/archive/refs/heads/$Branch.zip" -OutFile $zip
         Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force
-        $src = (Get-ChildItem -LiteralPath $tmp -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'tidyup_app.py') } | Select-Object -First 1).FullName
+        # the archive contains <repo>-<branch>\<tool folder>\...
+        $src = Get-ChildItem -LiteralPath $tmp -Directory | ForEach-Object { Join-Path $_.FullName $ToolFolder } |
+            Where-Object { Test-Path (Join-Path $_ 'tidyup_app.py') } | Select-Object -First 1
         if (-not $src) { throw 'The download does not contain PC TidyUp - please try again later.' }
     }
 

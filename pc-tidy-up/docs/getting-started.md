@@ -9,7 +9,7 @@ A step-by-step guide for first-time users. It takes about 10 minutes, plus a few
 Open **PowerShell** (Start menu → type *PowerShell*) and run:
 
 ```powershell
-irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/MZade/productivity-tools/main/pc-tidy-up/install.ps1 | iex
 ```
 
 The installer:
@@ -23,7 +23,7 @@ The installer:
 **Options:**
 
 ```powershell
-$installer = [scriptblock]::Create((irm https://raw.githubusercontent.com/MZade/productivity-tooling-pc-tidy-up/main/install.ps1))
+$installer = [scriptblock]::Create((irm https://raw.githubusercontent.com/MZade/productivity-tools/main/pc-tidy-up/install.ps1))
 & $installer -Schedule              # also schedule a weekly scan (Mondays 12:30)
 & $installer -NoDesktopShortcut     # Start menu entry only
 & $installer -InstallDir D:\Tools\PC-TidyUp
@@ -59,22 +59,23 @@ Close and reopen PowerShell afterwards.
 
 **Without git (easiest):**
 
-1. Open https://github.com/MZade/productivity-tooling-pc-tidy-up
+1. Open https://github.com/MZade/productivity-tools
 2. Click the green **Code** button → **Download ZIP**.
 3. In Explorer, **right-click the ZIP → Properties → tick "Unblock" → OK**. This stops Windows from warning about every file inside.
-4. Right-click the ZIP → **Extract All…** and pick a folder, for example `C:\Tools\PC-TidyUp`.
+4. Right-click the ZIP → **Extract All…** and pick a folder, for example `C:\Tools`. PC TidyUp is in the `pc-tidy-up` folder inside it, for example `C:\Tools\productivity-tools-main\pc-tidy-up`.
 
    A folder **outside** OneDrive is best, so your scan reports aren't synced to the cloud.
 
 **With git:**
 
 ```powershell
-git clone https://github.com/MZade/productivity-tooling-pc-tidy-up.git C:\Tools\PC-TidyUp
+git clone https://github.com/MZade/productivity-tools.git C:\Tools\productivity-tools
+# PC TidyUp is in C:\Tools\productivity-tools\pc-tidy-up
 ```
 
 ## 3. Start it
 
-Double-click **`PC-TidyUp.cmd`** in the folder. Explorer may show it as *PC-TidyUp* with the type *Windows Command Script*.
+Double-click **`PC-TidyUp.cmd`** in the `pc-tidy-up` folder. Explorer may show it as *PC-TidyUp* with the type *Windows Command Script*.
 
 - If Windows shows **"Windows protected your PC"** (SmartScreen), click **More info → Run anyway**. Only do this for a copy you downloaded from the repository above.
 - A console window opens. **Keep it open** while you use PC TidyUp.

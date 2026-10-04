@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2026-10)
+
+- PC TidyUp now lives in the [productivity-tools](https://github.com/MZade/productivity-tools) repository, folder `pc-tidy-up`. New install command: `irm https://raw.githubusercontent.com/MZade/productivity-tools/main/pc-tidy-up/install.ps1 | iex`. Existing installations update normally.
+
 ## 1.1.0 (2026-10)
 
 - One-command installer `install.ps1` (`irm … | iex`): checks for or installs Python, installs per user without admin, unblocks the files, adds Start menu and desktop shortcuts with the PC TidyUp icon, optional weekly scan; updates keep reports, rules and settings; `-Uninstall`

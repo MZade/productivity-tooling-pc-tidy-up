@@ -1,6 +1,6 @@
 # Security
 
-PC TidyUp runs entirely on your own computer. It has no cloud service, no telemetry and no network access, apart from the browser talking to the local app on `127.0.0.1`. The local app's safeguards are described in [How it works](docs/how-it-works.md#the-local-app-and-its-security-model).
+The tools in this repository run entirely on your own computer. They have no cloud service, no telemetry and no network access, apart from the browser talking to the local app on `127.0.0.1`. PC TidyUp's local app and its safeguards are described in [How it works](pc-tidy-up/docs/how-it-works.md#the-local-app-and-its-security-model).
 
 ## Reporting a vulnerability
 

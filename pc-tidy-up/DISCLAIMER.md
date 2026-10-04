@@ -1,6 +1,6 @@
 # Disclaimer and limitation of liability
 
-**Please read this carefully before you download, install, run or otherwise use any tool in this repository, including PC TidyUp (each and together "the Software").** By doing any of these things, you accept this disclaimer in full. If you don't accept it, don't use the Software.
+**Please read this carefully before you download, install, run or otherwise use PC TidyUp ("the Software").** By doing any of these things, you accept this disclaimer in full. If you don't accept it, don't use the Software.
 
 This disclaimer applies in addition to the license terms in [LICENSE.md](LICENSE.md), including its *No Liability* section. "**The Author**" means Mehrdad Ghazvinizadeh, the creator, copyright holder, licensor and publisher of the Software, together with any contributors and anyone who distributes the Software.
 
